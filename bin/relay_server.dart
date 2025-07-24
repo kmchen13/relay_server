@@ -5,11 +5,13 @@ class Player {
   final String userName;
   final WebSocket socket;
   final String expectedUser;
+  final int startTime;
 
   Player({
     required this.userName,
     required this.socket,
     required this.expectedUser,
+    required this.startTime,
   });
 }
 
@@ -24,6 +26,15 @@ void main() async {
     if (WebSocketTransformer.isUpgradeRequest(request)) {
       final socket = await WebSocketTransformer.upgrade(request);
       print('[RELAY] Nouveau client connecté');
+      print('[RELAY] Liste des joueurs connectés :');
+      for (final p in players) {
+        final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
+        final hms = '${dt.hour.toString().padLeft(2, '0')}:'
+            '${dt.minute.toString().padLeft(2, '0')}:'
+            '${dt.second.toString().padLeft(2, '0')}';
+        print(
+            '  - userName: ${p.userName}, expectedUser: ${p.expectedUser}, startTime: $hms');
+      }
 
       socket.listen(
         (data) {
@@ -54,11 +65,13 @@ void _handleMessage(
     if (message['type'] == 'connect') {
       final userName = message['userName'];
       final expectedUser = message['expectedUser'];
+      final startTime = message['startTime'];
 
       final player = Player(
         userName: userName,
         socket: senderSocket,
         expectedUser: expectedUser,
+        startTime: startTime,
       );
 
       players.add(player);
