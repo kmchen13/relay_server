@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:scrabble_chen/services/utility.dart';
 
 class Player {
   final String userName;
@@ -16,22 +17,25 @@ class Player {
 void main() async {
   final players = <Player>[];
 
-  final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
+//kmc_rc:Adaptation render.com:  final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
+  final port = int.parse(Platform.environment['PORT'] ?? '8080');
+  final server = await HttpServer.bind(InternetAddress.anyIPv4, port);
+//kmc_rcf
+
   print(
-    '[RELAY] Serveur WebSocket lancé sur ws://${server.address.address}:${server.port}',
-  );
+      '${logHeader("RelayServer")} Serveur WebSocket lancé sur ws://${server.address.address}:${server.port}');
 
   await for (HttpRequest request in server) {
     if (WebSocketTransformer.isUpgradeRequest(request)) {
       final socket = await WebSocketTransformer.upgrade(request);
-      print('[RELAY] Nouveau client connecté');
+      print('${logHeader("RelayServer")} Nouveau client connecté');
 
       socket.listen(
         (data) {
           _handleMessage(data, socket, players);
         },
         onDone: () {
-          print('[RELAY] Déconnexion');
+          print('${logHeader("RelayServer")} Déconnexion');
           players.removeWhere((p) => p.socket == socket);
         },
       );
@@ -63,7 +67,7 @@ void _handleMessage(
       );
 
       players.add(player);
-      print('[RELAY] $userName attend $expectedUser');
+      print('${logHeader("RelayServer")} $userName attend $expectedUser');
 
       // Chercher un joueur qui attend cette personne
       Player? match;
@@ -120,6 +124,6 @@ void _handleMessage(
       }
     }
   } catch (e) {
-    print('[RELAY] Erreur : $e');
+    print('${logHeader("RelayServer")} Erreur : $e');
   }
 }
