@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+final _debug = true;
+
 class Player {
   final String userName;
   final WebSocket socket;
@@ -120,7 +122,10 @@ void _handleMessage(
         (p) => p.socket == senderSocket,
         orElse: () => null!,
       );
-      if (sender == null) return;
+      if (sender == null) {
+        if (_debug) print('[RELAY] Sender null detected');
+        return;
+      }
 
       Player? receiver;
       try {
