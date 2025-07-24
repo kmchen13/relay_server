@@ -4,13 +4,13 @@ import 'dart:io';
 class Player {
   final String userName;
   final WebSocket socket;
-  final String expectedUser;
+  final String expectedName;
   final int startTime;
 
   Player({
     required this.userName,
     required this.socket,
-    required this.expectedUser,
+    required this.expectedName,
     required this.startTime,
   });
 }
@@ -33,7 +33,7 @@ void main() async {
             '${dt.minute.toString().padLeft(2, '0')}:'
             '${dt.second.toString().padLeft(2, '0')}';
         print(
-            '  - userName: ${p.userName}, expectedUser: ${p.expectedUser}, startTime: $hms');
+            '  - userName: ${p.userName}, expectedName: ${p.expectedName}, startTime: $hms');
       }
 
       socket.listen(
@@ -64,31 +64,39 @@ void _handleMessage(
 
     if (message['type'] == 'connect') {
       final userName = message['userName'];
-      final expectedUser = message['expectedUser'];
+      final expectedName = message['expectedName'];
       final startTime = message['startTime'];
 
       final player = Player(
         userName: userName,
         socket: senderSocket,
-        expectedUser: expectedUser,
+        expectedName: expectedName,
         startTime: startTime,
       );
 
       players.add(player);
-      print('[RELAY] $userName attend $expectedUser');
+      print('[RELAY] $userName attend $expectedName');
 
-      // Chercher un joueur qui attend cette personne
-      Player? match;
-      try {
-        match = players.firstWhere(
-          (p) =>
-              p.userName == expectedUser &&
-              p.expectedUser == userName &&
-              p.socket != senderSocket,
-        );
-      } catch (_) {
-        match = null;
+      bool _isMatch(
+        String localUser,
+        String expectedName,
+        String remoteUser,
+        String remoteExpected,
+      ) {
+        return (localUser == remoteExpected && expectedName == remoteUser) ||
+            (remoteExpected.isEmpty && expectedName.isEmpty);
       }
+
+      Player? match = players.firstWhere(
+        (p) =>
+            _isMatch(
+              userName,
+              expectedName,
+              p.userName,
+              p.expectedName,
+            ) &&
+            p.socket != senderSocket,
+      );
 
       if (match != null) {
         print(
@@ -118,8 +126,8 @@ void _handleMessage(
       try {
         receiver = players.firstWhere(
           (p) =>
-              p.userName == sender.expectedUser &&
-              p.expectedUser == sender.userName,
+              p.userName == sender.expectedName &&
+              p.expectedName == sender.userName,
         );
       } catch (_) {
         receiver = null;
