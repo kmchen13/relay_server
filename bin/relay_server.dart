@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:collection/collection.dart';
 
 final _debug = true;
 
@@ -18,11 +19,12 @@ class Player {
 }
 
 void main() async {
-  final players = <Player>[];
+  var players = <Player>[];
 
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
   print(
-      '[RELAY] Serveur WebSocket lancé sur ws://${server.address.address}:${server.port}');
+    '[RELAY] Serveur WebSocket lancé sur ws://${server.address.address}:${server.port}',
+  );
 
   await for (HttpRequest request in server) {
     if (WebSocketTransformer.isUpgradeRequest(request)) {
@@ -31,11 +33,14 @@ void main() async {
       print('[RELAY] Liste des joueurs connectés :');
       for (final p in players) {
         final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
-        final hms = '${dt.hour.toString().padLeft(2, '0')}:'
+        final hms =
+            '${dt.hour.toString().padLeft(2, '0')}:'
             '${dt.minute.toString().padLeft(2, '0')}:'
             '${dt.second.toString().padLeft(2, '0')}';
-        print(
-            '  - userName: ${p.userName}, expectedName: ${p.expectedName}, startTime: $hms');
+        if (_debug)
+          print(
+            '  - userName: ${p.userName}, expectedName: ${p.expectedName}, startTime: $hms',
+          );
       }
 
       socket.listen(
@@ -89,14 +94,9 @@ void _handleMessage(
             (remoteExpected.isEmpty && expectedName.isEmpty);
       }
 
-      Player? match = players.firstWhere(
+      Player? match = players.firstWhereOrNull(
         (p) =>
-            _isMatch(
-              userName,
-              expectedName,
-              p.userName,
-              p.expectedName,
-            ) &&
+            _isMatch(userName, expectedName, p.userName, p.expectedName) &&
             p.socket != senderSocket,
       );
 
