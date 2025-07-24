@@ -33,8 +33,7 @@ void main() async {
       print('[RELAY] Liste des joueurs connectés :');
       for (final p in players) {
         final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
-        final hms =
-            '${dt.hour.toString().padLeft(2, '0')}:'
+        final hms = '${dt.hour.toString().padLeft(2, '0')}:'
             '${dt.minute.toString().padLeft(2, '0')}:'
             '${dt.second.toString().padLeft(2, '0')}';
         if (_debug)
@@ -49,7 +48,16 @@ void main() async {
         },
         onDone: () {
           print('[RELAY] Déconnexion');
-          players.removeWhere((p) => p.socket == socket);
+          final removedPlayer = players.firstWhereOrNull(
+            (p) => p.socket == socket,
+          );
+
+          if (removedPlayer != null) {
+            print('[RELAY] Déconnexion de ${removedPlayer.userName}');
+            players.remove(removedPlayer);
+          } else {
+            print('[RELAY] Déconnexion d’un socket inconnu');
+          }
         },
       );
     } else {
@@ -81,8 +89,14 @@ void _handleMessage(
         startTime: startTime,
       );
 
+      final alreadyExists = players.any((p) => p.userName == userName);
+      if (alreadyExists) {
+        print('[RELAY] $userName est déjà connecté — joueur ignoré');
+        return;
+      }
+
       players.add(player);
-      print('[RELAY] $userName attend $expectedName');
+      print('[RELAY] $userName ajouté à la liste attend $expectedName');
 
       bool _isMatch(
         String localUser,
@@ -118,9 +132,8 @@ void _handleMessage(
       final gameStateJson = message['data'];
 
       // Envoyer au partenaire
-      Player? sender = players.firstWhere(
+      Player? sender = players.firstWhereOrNull(
         (p) => p.socket == senderSocket,
-        orElse: () => null!,
       );
       if (sender == null) {
         if (_debug) print('[RELAY] Sender null detected');
