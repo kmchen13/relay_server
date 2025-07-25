@@ -20,7 +20,7 @@ class Player {
 }
 
 void showUsersConnected(players) {
-  print('[RELAY] Liste des joueurs connectés : Name : expected : startTime');
+  print('[RELAY] Liste des joueurs connectés:\n- Name : expected : startTime');
   for (final p in players) {
     final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
     final hms = '${dt.hour.toString().padLeft(2, '0')}:'
@@ -50,7 +50,6 @@ void main() async {
           _handleMessage(data, socket, players);
         },
         onDone: () {
-          print('[RELAY] Déconnexion');
           final removedPlayer = players.firstWhereOrNull(
             (p) => p.socket == socket,
           );
@@ -121,14 +120,21 @@ void _handleMessage(
           '[RELAY] Match trouvé entre ${player.userName} et ${match.userName}',
         );
 
-        // Informer chaque joueur que la connexion est établie
-        player.socket.add(
-          jsonEncode({'type': 'matched', 'partnerName': match.userName}),
-        );
+        final matchedMsg = jsonEncode({
+          'type': 'matched',
+          'leftName': player.userName,
+          'leftStartTime': player.startTime,
+          'leftIP': '',
+          'leftPort': 0,
+          'rightName': match.userName,
+          'rightStartTime': match.startTime,
+          'rightIP': '',
+          'rightPort': 0,
+        });
 
-        match.socket.add(
-          jsonEncode({'type': 'matched', 'partnerName': player.userName}),
-        );
+        // Informer chaque joueur que la connexion est établie
+        player.socket.add(matchedMsg);
+        match.socket.add(matchedMsg);
       }
     } else if (message['type'] == 'gameState') {
       final gameStateJson = message['data'];
