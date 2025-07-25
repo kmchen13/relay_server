@@ -19,6 +19,20 @@ class Player {
   });
 }
 
+void showUsersConnected(players) {
+  print('[RELAY] Liste des joueurs connectés : Name : expected : startTime');
+  for (final p in players) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
+    final hms = '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}:'
+        '${dt.second.toString().padLeft(2, '0')}';
+    if (_debug)
+      print(
+        '  - ${p.userName} : ${p.expectedName} : $hms',
+      );
+  }
+}
+
 void main() async {
   var players = <Player>[];
 
@@ -30,19 +44,6 @@ void main() async {
   await for (HttpRequest request in server) {
     if (WebSocketTransformer.isUpgradeRequest(request)) {
       final socket = await WebSocketTransformer.upgrade(request);
-      print('[RELAY] Nouveau client connecté');
-      print(
-          '[RELAY] Liste des joueurs connectés : Name : expected : startTime');
-      for (final p in players) {
-        final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
-        final hms = '${dt.hour.toString().padLeft(2, '0')}:'
-            '${dt.minute.toString().padLeft(2, '0')}:'
-            '${dt.second.toString().padLeft(2, '0')}';
-        if (_debug)
-          print(
-            '  - ${p.userName} : ${p.expectedName} : $hms',
-          );
-      }
 
       socket.listen(
         (data) {
@@ -57,6 +58,7 @@ void main() async {
           if (removedPlayer != null) {
             print('[RELAY] Déconnexion de ${removedPlayer.userName}');
             players.remove(removedPlayer);
+            showUsersConnected(players);
           } else {
             print('[RELAY] Déconnexion d’un socket inconnu');
           }
@@ -91,13 +93,12 @@ void _handleMessage(
         startTime: startTime,
       );
 
-      final alreadyExists = players.any((p) => p.userName == userName);
-      if (alreadyExists) {
-        print('[RELAY] $userName est déjà connecté');
-      } else {
-        players.add(player);
-        print('[RELAY] $userName ajouté à la liste attend $expectedName');
-      }
+// Avant d’ajouter le nouveau joueur, supprimer l’ancien s’il existe
+      players.removeWhere((p) => p.userName == userName);
+
+// Ajouter le nouveau joueur avec le socket actuel
+      players.add(player);
+      showUsersConnected(players);
 
       bool _isMatch(
         String localUser,
