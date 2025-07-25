@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# v1.0.0
+#
+if [[ ( "$1" == "?" )  || ( "$1" == "h" ) ]]
+then
+    echo "
+    Documentation
+
+	Syntaxe:" $0 " "
+
+   exit 1
+fi
+
+if [[ $1 == "-"*'t'* ]]
+then
+    set -x #echo on
+fi
+
+adb kill-server
+adb start-server
+lsof -i :5037
+
+
+echo 'Terminé'
+exit 0

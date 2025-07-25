@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:collection/collection.dart';
+import 'services/utility.dart';
 
 final _debug = true;
 
@@ -30,7 +31,8 @@ void main() async {
     if (WebSocketTransformer.isUpgradeRequest(request)) {
       final socket = await WebSocketTransformer.upgrade(request);
       print('[RELAY] Nouveau client connecté');
-      print('[RELAY] Liste des joueurs connectés :');
+      print(
+          '[RELAY] Liste des joueurs connectés : Name : expected : startTime');
       for (final p in players) {
         final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
         final hms = '${dt.hour.toString().padLeft(2, '0')}:'
@@ -38,7 +40,7 @@ void main() async {
             '${dt.second.toString().padLeft(2, '0')}';
         if (_debug)
           print(
-            '  - userName: ${p.userName}, expectedName: ${p.expectedName}, startTime: $hms',
+            '  - ${p.userName} : ${p.expectedName} : $hms',
           );
       }
 
@@ -91,12 +93,11 @@ void _handleMessage(
 
       final alreadyExists = players.any((p) => p.userName == userName);
       if (alreadyExists) {
-        print('[RELAY] $userName est déjà connecté — joueur ignoré');
-        return;
+        print('[RELAY] $userName est déjà connecté');
+      } else {
+        players.add(player);
+        print('[RELAY] $userName ajouté à la liste attend $expectedName');
       }
-
-      players.add(player);
-      print('[RELAY] $userName ajouté à la liste attend $expectedName');
 
       bool _isMatch(
         String localUser,
