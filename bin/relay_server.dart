@@ -163,6 +163,10 @@ void _handleMessage(
         receiver.socket.add(
           jsonEncode({'type': 'gameState', 'data': gameStateJson}),
         );
+      } else {
+        if (_debug)
+          print(
+              '[RELAY] Partenaire non trouvé pour envoi gameState de ${sender.userName}');
       }
     } else if (message['type'] == 'ping') {
       senderSocket.add(jsonEncode({'type': 'pong'}));
