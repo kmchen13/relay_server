@@ -164,6 +164,9 @@ void _handleMessage(
           jsonEncode({'type': 'gameState', 'data': gameStateJson}),
         );
       }
+    } else if (message['type'] == 'ping') {
+      senderSocket.add(jsonEncode({'type': 'pong'}));
+      return;
     }
   } catch (e) {
     print('[RELAY] Erreur : $e');
