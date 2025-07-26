@@ -10,12 +10,14 @@ class Player {
   final WebSocket socket;
   final String expectedName;
   final int startTime;
+  WebSocket? partnerSocket; // 🆕
 
   Player({
     required this.userName,
     required this.socket,
     required this.expectedName,
     required this.startTime,
+    this.partnerSocket,
   });
 }
 
@@ -120,6 +122,10 @@ void _handleMessage(
           '[RELAY] Match trouvé entre ${player.userName} et ${match.userName}',
         );
 
+        //Mémorisation des sockets pour les échanges futurs
+        player.partnerSocket = match.socket;
+        match.partnerSocket = player.socket;
+
         final matchedMsg = jsonEncode({
           'type': 'matched',
           'leftName': player.userName,
@@ -143,30 +149,16 @@ void _handleMessage(
       Player? sender = players.firstWhereOrNull(
         (p) => p.socket == senderSocket,
       );
-      if (sender == null) {
-        if (_debug) print('[RELAY] Sender null detected');
-        return;
-      }
+      sender = players.firstWhere((p) => p.socket == senderSocket);
+      final receiverSocket = sender.partnerSocket;
 
-      Player? receiver;
-      try {
-        receiver = players.firstWhere(
-          (p) =>
-              p.userName == sender.expectedName &&
-              p.expectedName == sender.userName,
-        );
-      } catch (_) {
-        receiver = null;
-      }
-
-      if (receiver != null) {
-        receiver.socket.add(
-          jsonEncode({'type': 'gameState', 'data': gameStateJson}),
-        );
+      if (receiverSocket != null) {
+        receiverSocket
+            .add(jsonEncode({'type': 'gameState', 'data': gameStateJson}));
+        print(
+            '[RELAY] GameState envoyé de ${sender.userName} à son partenaire');
       } else {
-        if (_debug)
-          print(
-              '[RELAY] Partenaire non trouvé pour envoi gameState de ${sender.userName}');
+        print('[RELAY] Partenaire introuvable pour ${sender.userName}');
       }
     } else if (message['type'] == 'ping') {
       senderSocket.add(jsonEncode({'type': 'pong'}));
