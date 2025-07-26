@@ -153,8 +153,12 @@ void _handleMessage(
       final receiverSocket = sender.partnerSocket;
 
       if (receiverSocket != null) {
-        receiverSocket
-            .add(jsonEncode({'type': 'gameState', 'data': gameStateJson}));
+        receiverSocket.add(
+          jsonEncode({
+            'type': 'gameState',
+            'data': jsonDecode(gameStateJson), // <- CORRECTION ICI
+          }),
+        );
         print(
             '[RELAY] GameState envoyé de ${sender.userName} à son partenaire');
       } else {
