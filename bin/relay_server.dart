@@ -95,7 +95,16 @@ void _handleMessage(
       );
 
 // Avant d’ajouter le nouveau joueur, supprimer l’ancien s’il existe
-      players.removeWhere((p) => p.userName == userName);
+      players.removeWhere((p) {
+        final shouldRemove = p.userName ==
+            userName; //ettoutes les occurences de ce joueurs laissées par erreur
+        if (shouldRemove) {
+          try {
+            p.socket.close(); // fermeture explicite
+          } catch (_) {}
+        }
+        return shouldRemove;
+      });
 
 // Ajouter le nouveau joueur avec le socket actuel
       players.add(player);
