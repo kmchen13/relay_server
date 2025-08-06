@@ -22,7 +22,8 @@ class Player {
 }
 
 void showUsersConnected(players) {
-  print('[RELAY] Liste des joueurs connectés:\n- Name : expected : startTime');
+  print(
+      '[RELAY] Liste des joueurs connectés:\n- Name : expected : startTime: socket');
   for (final p in players) {
     final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
     final hms = '${dt.hour.toString().padLeft(2, '0')}:'
@@ -30,7 +31,7 @@ void showUsersConnected(players) {
         '${dt.second.toString().padLeft(2, '0')}';
     if (_debug)
       print(
-        '  - ${p.userName} : ${p.expectedName} : $hms',
+        '  - ${p.userName} : ${p.expectedName} : $hms : ${p.socket}',
       );
   }
 }
@@ -61,7 +62,9 @@ void main() async {
             players.remove(removedPlayer);
             showUsersConnected(players);
           } else {
-            print('[RELAY] Déconnexion d’un socket inconnu');
+            print(
+                '[RELAY] Déconnexion d’un socket $socket retrouvé dans la liste des joueurs:');
+            showUsersConnected(players);
           }
         },
       );
@@ -97,7 +100,7 @@ void _handleMessage(
 // Avant d’ajouter le nouveau joueur, supprimer l’ancien s’il existe
       players.removeWhere((p) {
         final shouldRemove = p.userName ==
-            userName; //ettoutes les occurences de ce joueurs laissées par erreur
+            userName; //et toutes les occurences de ce joueurs laissées par erreur
         if (shouldRemove) {
           try {
             p.socket.close(); // fermeture explicite
