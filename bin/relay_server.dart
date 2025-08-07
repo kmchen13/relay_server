@@ -57,8 +57,7 @@ void main() async {
           );
 
           if (removedPlayer != null) {
-            print(
-                '[RELAY] Déconnexion de ${removedPlayer.userName} socket:${removedPlayer.socket}');
+            print('[RELAY] Déconnexion de ${removedPlayer.userName}');
             players.remove(removedPlayer);
             showUsersConnected(players);
           } else {
