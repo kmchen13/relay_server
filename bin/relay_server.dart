@@ -133,7 +133,9 @@ void _handleMessage(
             p.socket != senderSocket,
       );
 
-      if (match != null) {
+      if (match != null &&
+          match.partnerSocket == null &&
+          player.partnerSocket == null) {
         print(
           '[RELAY] Match trouvé entre ${player.userName} et ${match.userName}',
         );
@@ -180,7 +182,7 @@ void _handleMessage(
       } else {
         print('[RELAY] Partenaire introuvable pour ${sender.userName}');
       }
-    } else if (message['type'] == 'ping') {
+    } else if (message['type'] == 'ping' || message['type'] == 'keepalive') {
       senderSocket.add(jsonEncode({'type': 'pong'}));
       return;
     }
