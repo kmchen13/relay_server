@@ -10,6 +10,7 @@ void main() async {
 
   await for (HttpRequest req in server) {
     if (req.method == 'POST' && req.uri.path == '/connect') {
+      print("[RELAY] Demande de connection reçue : ${req.uri.query}");
       final data = await utf8.decoder.bind(req).join();
       final jsonData = jsonDecode(data);
       final userName = jsonData['userName'];
@@ -57,6 +58,8 @@ void main() async {
       }
       await req.response.close();
     } else if (req.method == 'POST' && req.uri.path == '/send') {
+      print("[RELAY] Message reçu de ${req.uri.queryParameters['from']}");
+      print("[Message: ${req.uri.queryParameters['message']}");
       final data = await utf8.decoder.bind(req).join();
       final jsonData = jsonDecode(data);
       final from = jsonData['from'];
