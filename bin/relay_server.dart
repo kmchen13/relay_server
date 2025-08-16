@@ -1,61 +1,82 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:collection/collection.dart';
 
 final List<Map<String, dynamic>> players = [];
 
 void main() async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
+
   print(
       "[RELAY] Serveur HTTP polling sur http://${server.address.host}:${server.port}");
 
   await for (HttpRequest req in server) {
     if (req.method == 'POST' && req.uri.path == '/connect') {
-      print("[RELAY] Demande de connection reçue : ${req.uri.query}");
       final data = await utf8.decoder.bind(req).join();
       final jsonData = jsonDecode(data);
       final userName = jsonData['userName'];
       final expected = jsonData['expectedName'];
       final startTime = jsonData['startTime'];
 
-      players.removeWhere((p) => p['userName'] == userName);
-      players.add({
-        'userName': userName,
-        'expectedName': expected,
-        'startTime': startTime,
-        'partner': '',
-        'gameId': '',
-        'message': ''
-      });
-
-      print(
-          "[RELAY] $userName connecté, recherche d'un partenaire '$expected' ...");
-
-      // Essayer de matcher
-      final match = players.firstWhere(
+      // Chercher si ce joueur a déjà une partie avec le même expected
+      Map<String, dynamic>? existing = players.firstWhereOrNull(
         (p) =>
-            ((p['userName'] == expected && p['expectedName'] == userName) ||
-                (p['expectedName'] == '' && expected == '')) &&
-            p['userName'] != userName,
-        orElse: () => {},
+            p['userName'] == userName &&
+            p['expectedName'] == expected &&
+            p['partner'] == '',
       );
 
-      if (match.isNotEmpty) {
+      if (existing != null) {
+        // Mise à jour du startTime si reconnect
+        existing['startTime'] = startTime;
+      } else {
+        // Créer une nouvelle entrée pour cette partie
+        players.add({
+          'userName': userName,
+          'expectedName': expected,
+          'startTime': startTime,
+          'partner': '',
+          'gameId': '',
+          'message': '',
+        });
+      }
+
+      // Matchmaking uniquement avec joueurs sans partenaire
+      final match = players.firstWhereOrNull((p) =>
+              p['partner'] == '' &&
+              p['userName'] != userName &&
+              ((p['userName'] == expected && expected != '') ||
+                  (expected == '' &&
+                      p['expectedName'] == '')) // match aléatoire
+          );
+
+      if (match != null) {
         final gameId = DateTime.now().millisecondsSinceEpoch.toString();
+
+        // Mettre à jour les deux entrées
         match['partner'] = userName;
         match['gameId'] = gameId;
-        players.firstWhere((p) => p['userName'] == userName)['partner'] =
-            match['userName'];
-        players.firstWhere((p) => p['userName'] == userName)['gameId'] = gameId;
+
+        final me = players.firstWhere((p) =>
+            p['userName'] == userName &&
+            p['expectedName'] == expected &&
+            p['partner'] == '');
+        me['partner'] = match['userName'];
+        me['gameId'] = gameId;
+
+        // Répondre au joueur qui vient de se connecter
         req.response.write(jsonEncode({
           'status': 'matched',
           'gameId': gameId,
           'partner': match['userName']
         }));
+
         print(
             "[RELAY] Match trouvé entre $userName et ${match['userName']} (Game ID: $gameId)");
       } else {
         req.response.write(jsonEncode({'status': 'waiting'}));
       }
+
       await req.response.close();
     } else if (req.method == 'POST' && req.uri.path == '/send') {
       print("[RELAY] Message reçu de ${req.uri.queryParameters['from']}");
