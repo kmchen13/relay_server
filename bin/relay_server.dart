@@ -147,10 +147,16 @@ void main() async {
         }
       } else {
         req.response.write(jsonEncode({'status': 'unknown_user $userName'}));
+        if (_debug) {
+          print("[RELAY] Poll pour $userName, aucun joueur trouvé.");
+        }
         showUsersConnected(players);
       }
       await req.response.close();
     } else if (req.method == 'GET' && req.uri.path == '/disconnect') {
+      if (_debug) {
+        print("[RELAY] Déconnexion demandée pour ${req.uri.queryParameters}");
+      }
       final userName = req.uri.queryParameters['leftName'] ?? '';
       final partner = req.uri.queryParameters['rightName'] ?? '';
       players.removeWhere(
