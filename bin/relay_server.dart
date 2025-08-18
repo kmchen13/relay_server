@@ -2,7 +2,25 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:collection/collection.dart';
 
+final _debug = true;
+
 final List<Map<String, dynamic>> players = [];
+void showUsersConnected(players) {
+  print('[RELAY] Liste des joueurs connectés:\n- Name : expected : startTime');
+
+  for (final p in players) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
+
+    final hms = '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}:'
+        '${dt.second.toString().padLeft(2, '0')}';
+
+    if (_debug)
+      print(
+        '  - ${p.userName} : ${p.expectedName} : $hms',
+      );
+  }
+}
 
 void main() async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
@@ -27,7 +45,7 @@ void main() async {
       );
 
       if (existing != null) {
-        // S'il aun message en attente, l'envoyer
+        // S'il a un message en attente, l'envoyer
       } else {
         // Créer une nouvelle entrée pour cette partie
         players.add({
@@ -38,6 +56,7 @@ void main() async {
           'gameId': '',
           'message': '',
         });
+        showUsersConnected(players);
       }
 
       // Matchmaking uniquement avec joueurs sans partenaire
@@ -130,6 +149,13 @@ void main() async {
       } else {
         req.response.write(jsonEncode({'status': 'unknown_user'}));
       }
+      await req.response.close();
+    } else if (req.method == 'GET' && req.uri.path == '/disconnect') {
+      final userName = req.uri.queryParameters['leftName'] ?? '';
+      final partner = req.uri.queryParameters['rightName'] ?? '';
+      players.removeWhere(
+          (p) => p['userName'] == userName || p['partner'] == partner);
+      showUsersConnected(players);
       await req.response.close();
     } else {
       req.response.statusCode = HttpStatus.notFound;
