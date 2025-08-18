@@ -36,6 +36,11 @@ void main() async {
       final expected = jsonData['expectedName'];
       final startTime = jsonData['startTime'];
 
+      if (_debug)
+        print(
+          "[RELAY] Demande de Connexion de $userName avec expected $expected à $startTime",
+        );
+
       // Chercher si ce joueur a déjà une partie avec le même expected
       Map<String, dynamic>? existing = players.firstWhereOrNull(
         (p) =>
@@ -55,6 +60,7 @@ void main() async {
           'partner': '',
           'gameId': '',
           'message': '',
+          'type': '' //gameState ou message
         });
         showUsersConnected(players);
       }
@@ -147,7 +153,8 @@ void main() async {
           player['message'] = '';
         }
       } else {
-        req.response.write(jsonEncode({'status': 'unknown_user'}));
+        req.response.write(jsonEncode({'status': 'unknown_user $userName'}));
+        showUsersConnected(players);
       }
       await req.response.close();
     } else if (req.method == 'GET' && req.uri.path == '/disconnect') {
