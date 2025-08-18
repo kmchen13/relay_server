@@ -9,5 +9,6 @@ environment:
 dependencies:
   shelf: ^1.4.0
   shelf_web_socket: ^1.0.1
+  collection: ^1.17.0
   
 startCommand: dart run bin/relay_server.dart

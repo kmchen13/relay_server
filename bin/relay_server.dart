@@ -27,8 +27,7 @@ void main() async {
       );
 
       if (existing != null) {
-        // Mise à jour du startTime si reconnect
-        existing['startTime'] = startTime;
+        // S'il aun message en attente, l'envoyer
       } else {
         // Créer une nouvelle entrée pour cette partie
         players.add({
@@ -71,6 +70,15 @@ void main() async {
           'partner': match['userName']
         }));
 
+        // Préparer le message "matched" uniquement pour le starter
+        final starterEntry =
+            players.firstWhere((p) => p['userName'] == match['username']);
+        starterEntry['message'] = jsonEncode({
+          'status': 'matched',
+          'partner': userName,
+          'gameId': gameId,
+        });
+
         print(
             "[RELAY] Match trouvé entre $userName et ${match['userName']} (Game ID: $gameId)");
       } else {
@@ -102,20 +110,23 @@ void main() async {
       }
       await req.response.close();
     } else if (req.method == 'GET' && req.uri.path == '/poll') {
+      // Traitement polling
       final userName = req.uri.queryParameters['userName'] ?? '';
       final player = players.firstWhere((p) => p['userName'] == userName,
           orElse: () => {});
       if (player.isNotEmpty) {
         final hasMsg = player['message'] != '';
+        // @todo implémenter la possibilité d'envoyer des messages; switch (player['message'])
         req.response.write(jsonEncode({
-          'status': hasMsg ? 'message' : 'no_message',
+          'status': hasMsg ? 'gameState' : 'no_message',
           'message': player['message'],
           'partner': player['partner'],
           'gameId': player['gameId']
         }));
-        if (hasMsg) player['message'] = ''; // vider après lecture
-        print(
-            "[RELAY] Poll pour $userName, message: ${hasMsg ? 'oui' : 'non'}");
+        if (hasMsg) {
+          print("[RELAY] Poll pour $userName, message: ${player['message']}");
+          player['message'] = '';
+        }
       } else {
         req.response.write(jsonEncode({'status': 'unknown_user'}));
       }
