@@ -3,22 +3,21 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 
 final _debug = true;
-
 final List<Map<String, dynamic>> players = [];
-void showUsersConnected(players) {
+
+void showUsersConnected(List<Map<String, dynamic>> players) {
   print('[RELAY] Liste des joueurs connectés:\n- Name : expected : startTime');
 
   for (final p in players) {
-    final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
+    final dt = DateTime.fromMillisecondsSinceEpoch(p['startTime']);
 
     final hms = '${dt.hour.toString().padLeft(2, '0')}:'
         '${dt.minute.toString().padLeft(2, '0')}:'
         '${dt.second.toString().padLeft(2, '0')}';
 
-    if (_debug)
-      print(
-        '  - ${p.userName} : ${p.expectedName} : $hms',
-      );
+    if (_debug) {
+      print('  - ${p['userName']} : ${p['expectedName']} : $hms');
+    }
   }
 }
 
@@ -36,10 +35,10 @@ void main() async {
       final expected = jsonData['expectedName'];
       final startTime = jsonData['startTime'];
 
-      if (_debug)
+      if (_debug) {
         print(
-          "[RELAY] Demande de Connexion de $userName avec expected $expected à $startTime",
-        );
+            "[RELAY] Demande de Connexion de $userName avec expected $expected à $startTime");
+      }
 
       // Chercher si ce joueur a déjà une partie avec le même expected
       Map<String, dynamic>? existing = players.firstWhereOrNull(
@@ -50,9 +49,8 @@ void main() async {
       );
 
       if (existing != null) {
-        // S'il a un message en attente, l'envoyer
+        // S'il a un message en attente, l'envoyer (TODO)
       } else {
-        // Créer une nouvelle entrée pour cette partie
         players.add({
           'userName': userName,
           'expectedName': expected,
@@ -60,19 +58,17 @@ void main() async {
           'partner': '',
           'gameId': '',
           'message': '',
-          'type': '' //gameState ou message
+          'type': '' // gameState ou message
         });
         showUsersConnected(players);
       }
 
       // Matchmaking uniquement avec joueurs sans partenaire
       final match = players.firstWhereOrNull((p) =>
-              p['partner'] == '' &&
-              p['userName'] != userName &&
-              ((p['userName'] == expected && expected != '') ||
-                  (expected == '' &&
-                      p['expectedName'] == '')) // match aléatoire
-          );
+          p['partner'] == '' &&
+          p['userName'] != userName &&
+          ((p['userName'] == expected && expected != '') ||
+              (expected == '' && p['expectedName'] == '')));
 
       if (match != null) {
         final gameId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -95,9 +91,9 @@ void main() async {
           'partner': match['userName']
         }));
 
-        // Préparer le message "matched" uniquement pour le starter
+        // Préparer le message "matched" pour l’autre joueur
         final starterEntry =
-            players.firstWhere((p) => p['userName'] == match['username']);
+            players.firstWhere((p) => p['userName'] == match['userName']);
         starterEntry['message'] = jsonEncode({
           'status': 'matched',
           'partner': userName,
@@ -112,20 +108,19 @@ void main() async {
 
       await req.response.close();
     } else if (req.method == 'POST' && req.uri.path == '/send') {
-      print("[RELAY] Message reçu de ${req.uri.queryParameters['from']}");
-      print("[Message: ${req.uri.queryParameters['message']}");
       final data = await utf8.decoder.bind(req).join();
       final jsonData = jsonDecode(data);
       final from = jsonData['from'];
       final msg = jsonData['message'];
 
-      final sender =
-          players.firstWhere((p) => p['userName'] == from, orElse: () => {});
-      if (sender.isNotEmpty) {
+      print("[RELAY] Message reçu de $from: $msg");
+
+      final sender = players.firstWhereOrNull((p) => p['userName'] == from);
+      if (sender != null) {
         final partnerName = sender['partner'];
-        final partner = players.firstWhere((p) => p['userName'] == partnerName,
-            orElse: () => {});
-        if (partner.isNotEmpty) {
+        final partner =
+            players.firstWhereOrNull((p) => p['userName'] == partnerName);
+        if (partner != null) {
           partner['message'] = msg;
           req.response.write(jsonEncode({'status': 'sent'}));
           print("[RELAY] Message de $from envoyé à $partnerName");
@@ -135,13 +130,11 @@ void main() async {
       }
       await req.response.close();
     } else if (req.method == 'GET' && req.uri.path == '/poll') {
-      // Traitement polling
       final userName = req.uri.queryParameters['userName'] ?? '';
-      final player = players.firstWhere((p) => p['userName'] == userName,
-          orElse: () => {});
-      if (player.isNotEmpty) {
+      final player = players.firstWhereOrNull((p) => p['userName'] == userName);
+
+      if (player != null) {
         final hasMsg = player['message'] != '';
-        // @todo implémenter la possibilité d'envoyer des messages; switch (player['message'])
         req.response.write(jsonEncode({
           'status': hasMsg ? 'gameState' : 'no_message',
           'message': player['message'],
