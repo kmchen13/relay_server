@@ -269,6 +269,9 @@ Future<void> _handlePoll(HttpRequest req) async {
       (p) => p.userName == userName && p.message != null,
       orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
     );
+    if (_debug) {
+      print("[RELAY] 📡 /poll $userName (message? ${withMsg.message != null})");
+    }
 
     if (withMsg.userName.isEmpty) {
       _jsonResponse(req.response, {
