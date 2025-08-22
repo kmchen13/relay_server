@@ -1,4 +1,3 @@
-// relay_server.dart
 import 'dart:convert';
 import 'dart:io';
 
@@ -54,31 +53,34 @@ void main() async {
         await _handleDisconnect(req);
       } else {
         req.response.statusCode = HttpStatus.notFound;
-        await req.response.close();
+        _jsonResponse(req.response, {
+          'error': 'not_found',
+          'message': 'Endpoint non trouvé',
+        });
       }
     } catch (e, st) {
       if (_debug) {
         print("[RELAY] ❌ Exception: $e");
         print(st);
       }
-      try {
-        req.response.statusCode = HttpStatus.internalServerError;
-        req.response.headers.contentType = ContentType.json;
-        req.response.write(jsonEncode({
-          'error': 'server_error',
-          'details': e.toString(),
-        }));
-        await req.response.close();
-      } catch (_) {
-        // ignorer si déjà clos
-      }
+      _jsonResponse(
+          req.response,
+          {
+            'error': 'server_error',
+            'details': e.toString(),
+          },
+          statusCode: HttpStatus.internalServerError);
+    } finally {
+      await req.response.close();
     }
   }
 }
 
 /// ---------- Helpers
 
-void _jsonResponse(HttpResponse res, Map<String, dynamic> json) {
+void _jsonResponse(HttpResponse res, Map<String, dynamic> json,
+    {int statusCode = HttpStatus.ok}) {
+  res.statusCode = statusCode;
   res.headers.contentType = ContentType.json;
   res.write(jsonEncode(json));
 }
@@ -138,148 +140,192 @@ void _queueMessageFor(String userName, Map<String, dynamic> message) {
 /// ---------- Handlers
 
 Future<void> _handleRegister(HttpRequest req) async {
-  final body = await utf8.decoder.bind(req).join();
-  final data = jsonDecode(body) as Map<String, dynamic>;
-  final String userName = (data['userName'] ?? '').toString();
-  final String expectedName = (data['expectedName'] ?? '').toString();
-  final int startTime = (data['startTime'] ?? 0) is int
-      ? data['startTime'] as int
-      : int.tryParse(data['startTime']?.toString() ?? '0') ?? 0;
-
-  if (_debug) {
-    print(
-        "[RELAY] 🔔 /register $userName expected=$expectedName start=$startTime");
-  }
-
-  players.removeWhere((p) =>
-      p.userName == userName &&
-      p.expectedName == expectedName &&
-      p.partner.isEmpty);
-
-  var me = _findOpenEntry(userName, expectedName);
-  me ??= PlayerEntry(
-      userName: userName, expectedName: expectedName, startTime: startTime);
-  if (!players.contains(me)) players.add(me);
-
-  final match = _findMatchingCounterpart(userName, expectedName);
-  if (match != null) {
-    final gameId = DateTime.now().millisecondsSinceEpoch.toString();
-
-    me.partner = match.userName;
-    me.partnerStartTime = match.startTime;
-    me.gameId = gameId;
-
-    match.partner = me.userName;
-    match.partnerStartTime = me.startTime;
-    match.gameId = gameId;
-
-    _jsonResponse(req.response, {
-      'status': 'matched',
-      'gameId': gameId,
-      'partner': match.userName,
-      'startTime': me.startTime,
-      'partnerStartTime': match.startTime,
-    });
-
-    _queueMessageFor(match.userName, {
-      'type': 'matched',
-      'gameId': gameId,
-      'partner': me.userName,
-      'startTime': match.startTime,
-      'partnerStartTime': me.startTime,
-    });
+  try {
+    final body = await utf8.decoder.bind(req).join();
+    final data = jsonDecode(body) as Map<String, dynamic>;
+    final String userName = (data['userName'] ?? '').toString();
+    final String expectedName = (data['expectedName'] ?? '').toString();
+    final int startTime = (data['startTime'] ?? 0) is int
+        ? data['startTime'] as int
+        : int.tryParse(data['startTime']?.toString() ?? '0') ?? 0;
 
     if (_debug) {
       print(
-          "[RELAY] ✅ Match: ${me.userName} ↔ ${match.userName} (gameId=$gameId)");
-      _showUsers();
+          "[RELAY] 🔔 /register $userName expected=$expectedName start=$startTime");
     }
-  } else {
-    _jsonResponse(req.response, {'status': 'waiting'});
-    if (_debug) _showUsers();
-  }
 
-  await req.response.close();
+    players.removeWhere((p) =>
+        p.userName == userName &&
+        p.expectedName == expectedName &&
+        p.partner.isEmpty);
+
+    var me = _findOpenEntry(userName, expectedName);
+    me ??= PlayerEntry(
+        userName: userName, expectedName: expectedName, startTime: startTime);
+    if (!players.contains(me)) players.add(me);
+
+    final match = _findMatchingCounterpart(userName, expectedName);
+    if (match != null) {
+      final gameId = DateTime.now().millisecondsSinceEpoch.toString();
+      me.partner = match.userName;
+      me.partnerStartTime = match.startTime;
+      me.gameId = gameId;
+      match.partner = me.userName;
+      match.partnerStartTime = me.startTime;
+      match.gameId = gameId;
+
+      _jsonResponse(req.response, {
+        'status': 'matched',
+        'gameId': gameId,
+        'partner': match.userName,
+        'startTime': me.startTime,
+        'partnerStartTime': match.startTime,
+      });
+
+      _queueMessageFor(match.userName, {
+        'type': 'matched',
+        'gameId': gameId,
+        'partner': me.userName,
+        'startTime': match.startTime,
+        'partnerStartTime': me.startTime,
+      });
+
+      if (_debug) {
+        print(
+            "[RELAY] ✅ Match: ${me.userName} ↔ ${match.userName} (gameId=$gameId)");
+        _showUsers();
+      }
+    } else {
+      _jsonResponse(req.response, {'status': 'waiting'});
+      if (_debug) _showUsers();
+    }
+  } catch (e) {
+    _jsonResponse(
+        req.response,
+        {
+          'error': 'invalid_request',
+          'details': e.toString(),
+        },
+        statusCode: HttpStatus.badRequest);
+  }
 }
 
 Future<void> _handleGameState(HttpRequest req) async {
-  final body = await utf8.decoder.bind(req).join();
-  final data = jsonDecode(body) as Map<String, dynamic>;
-  final String from = (data['from'] ?? '').toString();
-  final String to = (data['to'] ?? '').toString();
-  final payload = data['message'];
+  try {
+    final body = await utf8.decoder.bind(req).join();
+    final data = jsonDecode(body) as Map<String, dynamic>;
+    final String from = (data['from'] ?? '').toString();
+    final String to = (data['to'] ?? '').toString();
+    final payload = data['message'];
 
-  if (_debug) {
-    print("[RELAY] 🎲 /gamestate de $from → $to");
+    if (_debug) {
+      print("[RELAY] 🎲 /gamestate de $from → $to");
+    }
+
+    final target = players.lastWhere(
+      (p) =>
+          p.userName == to &&
+          (p.partner == from ||
+              p.expectedName == from ||
+              p.expectedName.isEmpty),
+      orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
+    );
+
+    if (target.userName.isEmpty) {
+      _jsonResponse(
+          req.response,
+          {
+            'status': 'partner_not_found',
+            'message': 'Partenaire non trouvé',
+          },
+          statusCode: HttpStatus.notFound);
+      return;
+    }
+
+    _queueMessageFor(to, {
+      'type': 'gameState',
+      'from': from,
+      'to': to,
+      'gameId': target.gameId,
+      'payload': payload,
+    });
+
+    _jsonResponse(req.response, {'status': 'sent'});
+  } catch (e) {
+    _jsonResponse(
+        req.response,
+        {
+          'error': 'invalid_request',
+          'details': e.toString(),
+        },
+        statusCode: HttpStatus.badRequest);
   }
-
-  final target = players.lastWhere(
-    (p) =>
-        p.userName == to &&
-        (p.partner == from || p.expectedName == from || p.expectedName.isEmpty),
-    orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
-  );
-  if (target.userName.isEmpty) {
-    _jsonResponse(req.response, {'status': 'partner_not_found'});
-    await req.response.close();
-    return;
-  }
-
-  _queueMessageFor(to, {
-    'type': 'gameState',
-    'from': from,
-    'to': to,
-    'gameId': target.gameId,
-    'payload': payload,
-  });
-
-  _jsonResponse(req.response, {'status': 'sent'});
-  await req.response.close();
 }
 
 Future<void> _handlePoll(HttpRequest req) async {
-  final userName = req.uri.queryParameters['userName'] ?? '';
+  try {
+    final userName = req.uri.queryParameters['userName'] ?? '';
+    final withMsg = players.firstWhere(
+      (p) => p.userName == userName && p.message != null,
+      orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
+    );
 
-  final withMsg = players.firstWhere(
-    (p) => p.userName == userName && p.message != null,
-    orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
-  );
+    if (withMsg.userName.isEmpty) {
+      _jsonResponse(req.response, {
+        'type': 'no_message',
+        'message': '',
+      });
+      return;
+    }
 
-  if (withMsg.userName.isEmpty) {
-    _jsonResponse(req.response, {'type': 'no_message', 'message': ''});
-    await req.response.close();
-    return;
+    final msg = withMsg.message!;
+    withMsg.message = null;
+
+    if (msg['type'] == 'matched') {
+      _jsonResponse(req.response, msg);
+    } else if (msg['type'] == 'gameState') {
+      _jsonResponse(req.response, {
+        'type': 'gameState',
+        'message': msg['payload'],
+        'from': msg['from'],
+        'gameId': msg['gameId'],
+      });
+    } else {
+      _jsonResponse(req.response, {
+        'type': 'message',
+        'message': msg,
+      });
+    }
+  } catch (e) {
+    _jsonResponse(
+        req.response,
+        {
+          'error': 'invalid_request',
+          'details': e.toString(),
+        },
+        statusCode: HttpStatus.badRequest);
   }
-
-  final msg = withMsg.message!;
-  withMsg.message = null;
-
-  if (msg['type'] == 'matched') {
-    _jsonResponse(req.response, msg);
-  } else if (msg['type'] == 'gameState') {
-    _jsonResponse(req.response, {
-      'type': 'gameState',
-      'message': msg['payload'],
-      'from': msg['from'],
-      'gameId': msg['gameId'],
-    });
-  } else {
-    _jsonResponse(req.response, {'type': 'message', 'message': msg});
-  }
-
-  await req.response.close();
 }
 
 Future<void> _handleDisconnect(HttpRequest req) async {
-  final userName = req.uri.queryParameters['userName'] ?? '';
-  final gameId = req.uri.queryParameters['gameId'];
+  try {
+    final userName = req.uri.queryParameters['userName'] ?? '';
+    final gameId = req.uri.queryParameters['gameId'];
 
-  if (gameId != null && gameId.isNotEmpty) {
-    players.removeWhere((p) => p.userName == userName && p.gameId == gameId);
-  } else {
-    players.removeWhere((p) => p.userName == userName);
+    if (gameId != null && gameId.isNotEmpty) {
+      players.removeWhere((p) => p.userName == userName && p.gameId == gameId);
+    } else {
+      players.removeWhere((p) => p.userName == userName);
+    }
+
+    _jsonResponse(req.response, {'status': 'disconnected'});
+  } catch (e) {
+    _jsonResponse(
+        req.response,
+        {
+          'error': 'invalid_request',
+          'details': e.toString(),
+        },
+        statusCode: HttpStatus.badRequest);
   }
-
-  _jsonResponse(req.response, {'status': 'disconnected'});
-  await req.response.close();
 }
