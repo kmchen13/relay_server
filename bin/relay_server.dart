@@ -1,99 +1,285 @@
+// relay_server.dart
 import 'dart:convert';
 import 'dart:io';
 
-/// Petit serveur relais WebSocket/HTTP pour Scrabble
-/// Permet de gérer le matching et le polling de messages entre joueurs.
+const bool _debug = true;
 
-class RelayServer {
-  final String host;
-  final int port;
-  HttpServer? _server;
+/// Représente une “ligne” dans la table players (une partie potentielle ou en cours)
+class PlayerEntry {
+  String userName; // le joueur local
+  String expectedName; // partenaire attendu ("" = aléatoire)
+  String partner; // rempli après match
+  int startTime; // startTime local (ms epoch)
+  int? partnerStartTime; // startTime du partenaire après match
+  String gameId; // rempli au match
+  Map<String, dynamic>? message; // message en attente
 
-  /// File d’attente des messages en attente pour chaque joueur
-  final Map<String, List<String>> _messageQueues = {};
+  PlayerEntry({
+    required this.userName,
+    required this.expectedName,
+    required this.startTime,
+    this.partner = '',
+    this.partnerStartTime,
+    this.gameId = '',
+    this.message,
+  });
 
-  RelayServer({this.host = '0.0.0.0', this.port = 8080});
+  Map<String, dynamic> asRow() => {
+        'userName': userName,
+        'expectedName': expectedName,
+        'partner': partner,
+        'startTime': startTime,
+        'partnerStartTime': partnerStartTime,
+        'gameId': gameId,
+        'message': message,
+      };
+}
 
-  Future<void> start() async {
-    _server = await HttpServer.bind(host, port);
-    print("✅ RelayServer démarré sur http://$host:$port");
+final List<PlayerEntry> players = [];
 
-    await for (HttpRequest req in _server!) {
-      _handleRequest(req);
-    }
-  }
+void main() async {
+  final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
+  print(
+      "[RELAY] Serveur HTTP polling sur http://${server.address.address}:${server.port}");
 
-  void _handleRequest(HttpRequest req) async {
-    final path = req.uri.path;
-    if (path == '/send' && req.method == 'POST') {
-      await _handleSend(req);
-    } else if (path == '/poll' && req.method == 'GET') {
-      await _handlePoll(req);
-    } else {
-      _sendJson(req.response, {'error': 'Route inconnue'});
-    }
-  }
-
-  Future<void> _handleSend(HttpRequest req) async {
+  await for (final req in server) {
     try {
-      final body = await utf8.decoder.bind(req).join();
-      final data = jsonDecode(body);
-
-      final to = data['to'] as String?;
-      final message = data['message'] as String?;
-
-      if (to == null || message == null) {
-        _sendJson(req.response,
-            {'status': 'error', 'reason': 'Paramètres manquants'});
-        return;
-      }
-
-      _messageQueues.putIfAbsent(to, () => []);
-      _messageQueues[to]!.add(message);
-
-      print("📨 Message stocké pour $to : $message");
-
-      _sendJson(req.response, {'status': 'ok'});
-    } catch (e) {
-      _sendJson(req.response, {'status': 'error', 'reason': e.toString()});
-    }
-  }
-
-  Future<void> _handlePoll(HttpRequest req) async {
-    try {
-      final userName = req.uri.queryParameters['userName'];
-      if (userName == null) {
-        _sendJson(
-            req.response, {'status': 'error', 'reason': 'userName manquant'});
-        return;
-      }
-
-      final queue = _messageQueues[userName];
-      if (queue != null && queue.isNotEmpty) {
-        final message = queue.removeAt(0);
-        print("📤 Message délivré à $userName : $message");
-        _sendJson(req.response, {'status': 'gameState', 'message': message});
+      if (req.method == 'POST' && req.uri.path == '/register') {
+        await _handleRegister(req);
+      } else if (req.method == 'POST' && req.uri.path == '/gamestate') {
+        await _handleGameState(req);
+      } else if (req.method == 'GET' && req.uri.path == '/poll') {
+        await _handlePoll(req);
+      } else if (req.method == 'GET' && req.uri.path == '/disconnect') {
+        await _handleDisconnect(req);
       } else {
-        _sendJson(req.response, {'status': 'empty'});
+        req.response.statusCode = HttpStatus.notFound;
+        await req.response.close();
       }
-    } catch (e) {
-      _sendJson(req.response, {'status': 'error', 'reason': e.toString()});
-    }
-  }
-
-  void _sendJson(HttpResponse res, Map<String, dynamic> data) {
-    try {
-      res.headers.contentType = ContentType.json;
-      res.write(jsonEncode(data));
-    } catch (e) {
-      print("Erreur en envoyant la réponse : $e");
-    } finally {
-      res.close();
+    } catch (e, st) {
+      if (_debug) {
+        print("[RELAY] ❌ Exception: $e");
+        print(st);
+      }
+      try {
+        req.response.statusCode = HttpStatus.internalServerError;
+        req.response.headers.contentType = ContentType.json;
+        req.response.write(jsonEncode({
+          'error': 'server_error',
+          'details': e.toString(),
+        }));
+        await req.response.close();
+      } catch (_) {
+        // ignorer si déjà clos
+      }
     }
   }
 }
 
-Future<void> main() async {
-  final server = RelayServer(port: 8080);
-  await server.start();
+/// ---------- Helpers
+
+void _jsonResponse(HttpResponse res, Map<String, dynamic> json) {
+  res.headers.contentType = ContentType.json;
+  res.write(jsonEncode(json));
+}
+
+void _showUsers() {
+  if (!_debug) return;
+  print(
+      '[RELAY] Joueurs enregistrés (user : expected -> partner | gameId | message?):');
+  for (final p in players) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
+    final hms =
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+    print(
+        '  - ${p.userName} : ${p.expectedName} ($hms) -> ${p.partner.isEmpty ? '—' : p.partner}'
+        ' | ${p.gameId.isEmpty ? '—' : p.gameId}'
+        ' | ${p.message == null ? 'no' : p.message!['type']}');
+  }
+}
+
+PlayerEntry? _findOpenEntry(String userName, String expectedName) {
+  return players
+      .where((p) =>
+          p.userName == userName &&
+          p.expectedName == expectedName &&
+          p.partner.isEmpty)
+      .lastOrNull;
+}
+
+PlayerEntry? _findMatchingCounterpart(String me, String myExpected) {
+  for (final p in players) {
+    final explicitPair = (p.userName == myExpected && p.expectedName == me);
+    final randomPair =
+        (myExpected.isEmpty && p.expectedName.isEmpty && p.userName != me);
+    if (p.partner.isEmpty && (explicitPair || randomPair)) {
+      return p;
+    }
+  }
+  return null;
+}
+
+void _queueMessageFor(String userName, Map<String, dynamic> message) {
+  final target = players.lastWhere(
+    (p) => p.userName == userName,
+    orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
+  );
+  if (target.userName.isEmpty) {
+    if (_debug)
+      print(
+          "[RELAY] ⚠️ Impossible de placer le message: joueur $userName introuvable");
+    return;
+  }
+  target.message = message;
+  if (_debug)
+    print("[RELAY] 📩 Message en file pour $userName: ${message['type']}");
+}
+
+/// ---------- Handlers
+
+Future<void> _handleRegister(HttpRequest req) async {
+  final body = await utf8.decoder.bind(req).join();
+  final data = jsonDecode(body) as Map<String, dynamic>;
+  final String userName = (data['userName'] ?? '').toString();
+  final String expectedName = (data['expectedName'] ?? '').toString();
+  final int startTime = (data['startTime'] ?? 0) is int
+      ? data['startTime'] as int
+      : int.tryParse(data['startTime']?.toString() ?? '0') ?? 0;
+
+  if (_debug) {
+    print(
+        "[RELAY] 🔔 /register $userName expected=$expectedName start=$startTime");
+  }
+
+  players.removeWhere((p) =>
+      p.userName == userName &&
+      p.expectedName == expectedName &&
+      p.partner.isEmpty);
+
+  var me = _findOpenEntry(userName, expectedName);
+  me ??= PlayerEntry(
+      userName: userName, expectedName: expectedName, startTime: startTime);
+  if (!players.contains(me)) players.add(me);
+
+  final match = _findMatchingCounterpart(userName, expectedName);
+  if (match != null) {
+    final gameId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    me.partner = match.userName;
+    me.partnerStartTime = match.startTime;
+    me.gameId = gameId;
+
+    match.partner = me.userName;
+    match.partnerStartTime = me.startTime;
+    match.gameId = gameId;
+
+    _jsonResponse(req.response, {
+      'status': 'matched',
+      'gameId': gameId,
+      'partner': match.userName,
+      'startTime': me.startTime,
+      'partnerStartTime': match.startTime,
+    });
+
+    _queueMessageFor(match.userName, {
+      'type': 'matched',
+      'gameId': gameId,
+      'partner': me.userName,
+      'startTime': match.startTime,
+      'partnerStartTime': me.startTime,
+    });
+
+    if (_debug) {
+      print(
+          "[RELAY] ✅ Match: ${me.userName} ↔ ${match.userName} (gameId=$gameId)");
+      _showUsers();
+    }
+  } else {
+    _jsonResponse(req.response, {'status': 'waiting'});
+    if (_debug) _showUsers();
+  }
+
+  await req.response.close();
+}
+
+Future<void> _handleGameState(HttpRequest req) async {
+  final body = await utf8.decoder.bind(req).join();
+  final data = jsonDecode(body) as Map<String, dynamic>;
+  final String from = (data['from'] ?? '').toString();
+  final String to = (data['to'] ?? '').toString();
+  final payload = data['message'];
+
+  if (_debug) {
+    print("[RELAY] 🎲 /gamestate de $from → $to");
+  }
+
+  final target = players.lastWhere(
+    (p) =>
+        p.userName == to &&
+        (p.partner == from || p.expectedName == from || p.expectedName.isEmpty),
+    orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
+  );
+  if (target.userName.isEmpty) {
+    _jsonResponse(req.response, {'status': 'partner_not_found'});
+    await req.response.close();
+    return;
+  }
+
+  _queueMessageFor(to, {
+    'type': 'gameState',
+    'from': from,
+    'to': to,
+    'gameId': target.gameId,
+    'payload': payload,
+  });
+
+  _jsonResponse(req.response, {'status': 'sent'});
+  await req.response.close();
+}
+
+Future<void> _handlePoll(HttpRequest req) async {
+  final userName = req.uri.queryParameters['userName'] ?? '';
+
+  final withMsg = players.firstWhere(
+    (p) => p.userName == userName && p.message != null,
+    orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
+  );
+
+  if (withMsg.userName.isEmpty) {
+    _jsonResponse(req.response, {'type': 'no_message', 'message': ''});
+    await req.response.close();
+    return;
+  }
+
+  final msg = withMsg.message!;
+  withMsg.message = null;
+
+  if (msg['type'] == 'matched') {
+    _jsonResponse(req.response, msg);
+  } else if (msg['type'] == 'gameState') {
+    _jsonResponse(req.response, {
+      'type': 'gameState',
+      'message': msg['payload'],
+      'from': msg['from'],
+      'gameId': msg['gameId'],
+    });
+  } else {
+    _jsonResponse(req.response, {'type': 'message', 'message': msg});
+  }
+
+  await req.response.close();
+}
+
+Future<void> _handleDisconnect(HttpRequest req) async {
+  final userName = req.uri.queryParameters['userName'] ?? '';
+  final gameId = req.uri.queryParameters['gameId'];
+
+  if (gameId != null && gameId.isNotEmpty) {
+    players.removeWhere((p) => p.userName == userName && p.gameId == gameId);
+  } else {
+    players.removeWhere((p) => p.userName == userName);
+  }
+
+  _jsonResponse(req.response, {'status': 'disconnected'});
+  await req.response.close();
 }
