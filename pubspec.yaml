@@ -1,6 +1,6 @@
  
 name: relay_server
-description: "Relay WebSocket server for Scrabble_chen"
+description: "Relay WebSocket server for Scrabble_P2P"
 version: 1.0.0
 
 environment:
