@@ -1,7 +1,9 @@
+import 'dart:developer';
 import 'dart:io';
 import '../utils/player_utils.dart';
 import '../utils/json_utils.dart';
 import '../player_entry.dart';
+import '../constants.dart';
 
 Future<void> handlePoll(HttpRequest req) async {
   try {
@@ -36,9 +38,13 @@ Future<void> handlePoll(HttpRequest req) async {
     } else if (msg['type'] == 'gameOver') {
       final gameId = msg['gameId'] ?? '';
       jsonResponse(req.response, msg);
+      if (debug)
+        print(
+            '$appName v$version: gameOver reçu pour ${msg['to']} (jeu $gameId)');
 
       if (gameId.isNotEmpty) {
         deleteGameId(gameId);
+        if (debug) print('$appName v$version: Jeu $gameId supprimé');
       }
     } else {
       jsonResponse(req.response, {
