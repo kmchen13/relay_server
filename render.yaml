@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: relay_server
+    runtime: dart
+    buildCommand: dart pub get && dart compile exe main.dart -o bin/server
+    startCommand: ./bin/server
