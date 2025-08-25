@@ -7,6 +7,10 @@ import 'handlers/poll_handler.dart';
 import 'handlers/disconnect_handler.dart';
 import 'constants.dart';
 
+void main() async {
+  await startServer();
+}
+
 Future<void> startServer() async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
   print(
