@@ -33,6 +33,13 @@ Future<void> handlePoll(HttpRequest req) async {
         'from': msg['from'],
         'gameId': msg['gameId'],
       });
+    } else if (msg['type'] == 'gameOver') {
+      final gameId = msg['gameId'] ?? '';
+      jsonResponse(req.response, msg);
+
+      if (gameId.isNotEmpty) {
+        deleteGameId(gameId);
+      }
     } else {
       jsonResponse(req.response, {
         'type': 'message',

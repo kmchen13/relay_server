@@ -52,3 +52,7 @@ void showPlayers() {
         ' | ${p.message == null ? 'no' : p.message!['type']}');
   }
 }
+
+void deleteGameId(String gameId) {
+  players.removeWhere((p) => p.gameId == gameId);
+}
