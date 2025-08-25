@@ -11,4 +11,4 @@ dependencies:
   shelf_web_socket: ^1.0.1
   collection: ^1.17.0
   
-startCommand: dart run bin/main.dart
+startCommand: dart run bin/relay_server.dart
