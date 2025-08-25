@@ -29,7 +29,7 @@ Future<void> handlePoll(HttpRequest req) async {
     } else if (msg['type'] == 'gameState') {
       jsonResponse(req.response, {
         'type': 'gameState',
-        'message': msg['payload'],
+        'message': msg['message'],
         'from': msg['from'],
         'gameId': msg['gameId'],
       });

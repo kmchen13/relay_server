@@ -11,7 +11,7 @@ Future<void> handleGameOver(HttpRequest req) async {
     final data = jsonDecode(body) as Map<String, dynamic>;
     final String from = (data['from'] ?? '').toString();
     final String to = (data['to'] ?? '').toString();
-    final payload = data['message'];
+    final message = data['message'];
 
     if (debug) print("[$appName v$version] 🏁 /gameover de $from → $to");
 
@@ -40,7 +40,7 @@ Future<void> handleGameOver(HttpRequest req) async {
       'from': from,
       'to': to,
       'gameId': target.gameId,
-      'payload': payload,
+      'message': message,
     });
 
     jsonResponse(req.response, {'status': 'sent'});
