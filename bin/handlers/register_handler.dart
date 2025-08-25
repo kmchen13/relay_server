@@ -58,10 +58,8 @@ Future<void> handleRegister(HttpRequest req) async {
 
       print(
           "[$appName v$version] ✅ Match: ${me.userName} ↔ ${match.userName} (gameId=$gameId)");
-      showPlayers();
     } else {
       jsonResponse(req.response, {'status': 'waiting'});
-      showPlayers();
     }
   } catch (e) {
     jsonResponse(
