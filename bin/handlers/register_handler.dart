@@ -28,6 +28,7 @@ Future<void> handleRegister(HttpRequest req) async {
     me ??= PlayerEntry(
         userName: userName, expectedName: expectedName, startTime: startTime);
     if (!players.contains(me)) players.add(me);
+    await savePlayers();
     if (debug) showPlayers();
 
     final match = findMatchingCounterpart(userName, expectedName);

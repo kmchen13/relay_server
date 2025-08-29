@@ -1,7 +1,28 @@
 import '../player_entry.dart';
 import '../constants.dart';
+import 'dart:convert';
+import 'dart:io';
 
-final List<PlayerEntry> players = [];
+List<PlayerEntry> players = [];
+
+/// Sauvegarder la liste des players dans un fichier JSON
+Future<void> savePlayers() async {
+  final file = File('players.json');
+  final jsonList = players.map((p) => p.asRow()).toList();
+  await file.writeAsString(jsonEncode(jsonList));
+}
+
+/// Charger la liste des players depuis un fichier JSON
+Future<void> loadPlayers() async {
+  final file = File('players.json');
+  if (!await file.exists()) {
+    players = [];
+    return;
+  }
+  final contents = await file.readAsString();
+  final List<dynamic> jsonList = jsonDecode(contents);
+  players = jsonList.map((row) => PlayerEntry.fromRow(row)).toList();
+}
 
 PlayerEntry? findOpenEntry(String userName, String expectedName) {
   return players
@@ -37,6 +58,7 @@ void queueMessageFor(String userName, Map<String, dynamic> message) {
   target.message = message;
   print(
       "[$appName v$version] 📩 Message en file pour $userName: ${message['type']}");
+  savePlayers();
 }
 
 void showPlayers() {
@@ -55,4 +77,5 @@ void showPlayers() {
 
 void deleteGameId(String gameId) {
   players.removeWhere((p) => p.gameId == gameId);
+  savePlayers();
 }

@@ -26,4 +26,16 @@ class PlayerEntry {
         'gameId': gameId,
         'message': message,
       };
+
+  factory PlayerEntry.fromRow(Map<String, dynamic> row) {
+    return PlayerEntry(
+      userName: row['userName'] as String,
+      expectedName: row['expectedName'] as String,
+      startTime: row['startTime'] as int,
+      partner: row['partner'] as String? ?? '',
+      partnerStartTime: row['partnerStartTime'] as int?,
+      gameId: row['gameId'] as String? ?? '',
+      message: row['message'] as Map<String, dynamic>?,
+    );
+  }
 }

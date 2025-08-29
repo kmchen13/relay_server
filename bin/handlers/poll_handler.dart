@@ -6,6 +6,7 @@ import '../player_entry.dart';
 import '../constants.dart';
 
 Future<void> handlePoll(HttpRequest req) async {
+  await loadPlayers();
   try {
     final userName = req.uri.queryParameters['userName'] ?? '';
     final withMsg = players.firstWhere(
