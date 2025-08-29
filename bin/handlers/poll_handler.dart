@@ -26,6 +26,7 @@ Future<void> handlePoll(HttpRequest req) async {
 
     final msg = withMsg.message!;
     withMsg.message = null;
+    await savePlayers();
 
     if (msg['type'] == 'matched') {
       jsonResponse(req.response, msg);

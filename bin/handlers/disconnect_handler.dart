@@ -13,6 +13,7 @@ Future<void> handleDisconnect(HttpRequest req) async {
     } else {
       players.removeWhere((p) => p.userName == userName);
     }
+    await savePlayers();
 
     jsonResponse(req.response, {'status': 'disconnected'});
     await req.response.close();
