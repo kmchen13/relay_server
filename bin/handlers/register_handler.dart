@@ -33,10 +33,17 @@ Future<void> handleRegister(HttpRequest req) async {
 
     final match = findMatchingCounterpart(userName, expectedName);
     if (match != null) {
-      final gameId = DateTime.now().millisecondsSinceEpoch.toString();
+      // 🔑 Réutiliser un gameId existant si déjà assigné
+      final gameId = me.gameId.isNotEmpty
+          ? me.gameId
+          : (match.gameId.isNotEmpty
+              ? match.gameId
+              : DateTime.now().millisecondsSinceEpoch.toString());
+
       me.partner = match.userName;
       me.partnerStartTime = match.startTime;
       me.gameId = gameId;
+
       match.partner = me.userName;
       match.partnerStartTime = me.startTime;
       match.gameId = gameId;

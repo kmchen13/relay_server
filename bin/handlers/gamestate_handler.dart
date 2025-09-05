@@ -32,6 +32,7 @@ Future<void> handleGameState(HttpRequest req) async {
             'message': 'Partenaire non trouvé',
           },
           statusCode: HttpStatus.notFound);
+      showPlayers();
       return;
     }
 

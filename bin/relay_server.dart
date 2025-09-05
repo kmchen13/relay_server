@@ -28,6 +28,8 @@ Future<void> startServer() async {
         await handlePoll(req);
       } else if (req.method == 'GET' && req.uri.path == '/disconnect') {
         await handleDisconnect(req);
+      } else if (req.method == 'GET' && req.uri.path == '/quit') {
+        await handleDisconnect(req);
       } else {
         req.response.statusCode = HttpStatus.notFound;
         jsonResponse(req.response, {
