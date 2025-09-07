@@ -39,8 +39,7 @@ PlayerEntry? findMatchingCounterpart(String me, String myExpected) {
     final randomPair =
         (myExpected.isEmpty && p.expectedName.isEmpty && p.userName != me);
 
-    // ✅ Si déjà matché (gameId non vide), ignorer
-    if (p.gameId.isNotEmpty) continue;
+    if (findInGame(me, p.userName) != null) continue;
 
     if (p.partner.isEmpty && (explicitPair || randomPair)) {
       return p;
@@ -120,6 +119,7 @@ void showPlayers() {
 
 showPlayersAsHTML() {
   final buffer = StringBuffer();
+  buffer.writeln('<h1>$appName v$version</h1>');
   buffer.writeln('<table border="1" cellpadding="5" cellspacing="0">');
   buffer.writeln(
       '<tr><th>User</th><th>Expected</th><th>Time</th><th>Partner</th><th>Game ID</th><th>Message</th></tr>');
