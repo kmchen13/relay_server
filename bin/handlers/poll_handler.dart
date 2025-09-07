@@ -41,12 +41,14 @@ Future<void> handlePoll(HttpRequest req) async {
     } else if (msg['type'] == 'gameOver') {
       final gameId = msg['gameId'] ?? '';
       jsonResponse(req.response, msg);
+      if (debug)
+        print(
+            '$appName v$version: gameOver reçu pour ${msg['to']} (jeu $gameId)');
+
       if (gameId.isNotEmpty) {
         deleteGameId(gameId);
         if (debug) print('$appName v$version: Jeu $gameId supprimé');
       }
-    } else if (msg['type'] == 'quit') {
-      jsonResponse(req.response, msg);
     } else {
       jsonResponse(req.response, {
         'type': 'message',
