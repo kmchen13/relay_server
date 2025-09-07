@@ -6,6 +6,7 @@ import 'handlers/gameover_handler.dart';
 import 'handlers/poll_handler.dart';
 import 'handlers/disconnect_handler.dart';
 import 'constants.dart';
+import 'utils/player_utils.dart';
 
 void main() async {
   await startServer();
@@ -30,10 +31,18 @@ Future<void> startServer() async {
         await handleDisconnect(req);
       } else if (req.method == 'GET' && req.uri.path == '/quit') {
         await handleDisconnect(req);
+      } else if (req.method == 'GET' && req.uri.path == '/admin') {
+        // Ajoutez ce bloc pour gérer la route '/admin'
+        showPlayers();
+        req.response.statusCode = HttpStatus.ok;
+        jsonResponse(req.response, {
+          'status': 'success',
+          'message': 'Liste des joueurs affichée dans la console du serveur',
+        });
       } else {
         req.response.statusCode = HttpStatus.notFound;
         jsonResponse(req.response, {
-          'error': 'not_found',
+          'error': 'page_not_found',
           'message': 'Endpoint non trouvé',
         });
       }

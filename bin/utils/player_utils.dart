@@ -38,8 +38,25 @@ PlayerEntry? findMatchingCounterpart(String me, String myExpected) {
     final explicitPair = (p.userName == myExpected && p.expectedName == me);
     final randomPair =
         (myExpected.isEmpty && p.expectedName.isEmpty && p.userName != me);
+
+    // ✅ Si déjà matché (gameId non vide), ignorer
+    if (p.gameId.isNotEmpty) continue;
+
     if (p.partner.isEmpty && (explicitPair || randomPair)) {
       return p;
+    }
+  }
+  return null;
+}
+
+/// Vérifie si deux joueurs sont déjà dans une même partie.
+/// Retourne leur gameId si trouvé, sinon `null`.
+String? findInGame(String userName, String expectedName) {
+  for (final p in players) {
+    if (p.userName == userName &&
+        p.partner == expectedName &&
+        p.gameId.isNotEmpty) {
+      return p.gameId;
     }
   }
   return null;
