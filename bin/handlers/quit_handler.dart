@@ -10,14 +10,20 @@ Future<void> handleQuit(HttpRequest req) async {
     final body = await utf8.decoder.bind(req).join();
     final data = jsonDecode(body) as Map<String, dynamic>;
     final String userName = (data['userName'] ?? '').toString();
+    final String partner = (data['partner'] ?? '').toString();
+
+    if (userName.isEmpty || partner.isEmpty) {
+      jsonResponse(req.response, {'status': 'Invalid_quit_parameters'});
+      return;
+    }
 
     final me = players.firstWhere(
-      (p) => p.userName == userName,
+      (p) => p.userName == userName && p.partner == partner,
       orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
     );
 
     if (me.userName.isEmpty) {
-      jsonResponse(req.response, {'status': 'not_found'});
+      jsonResponse(req.response, {'status': 'player_not_found'});
       return;
     }
 
@@ -28,9 +34,6 @@ Future<void> handleQuit(HttpRequest req) async {
         'gameId': me.gameId,
         'from': me.userName,
       });
-
-      // Supprimer le partenaire
-      players.removeWhere((p) => p.userName == me.partner);
     }
 
     // Supprimer le joueur

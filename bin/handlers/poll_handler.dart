@@ -29,31 +29,41 @@ Future<void> handlePoll(HttpRequest req) async {
     withMsg.message = null;
     await savePlayers();
 
-    if (msg['type'] == 'matched') {
-      jsonResponse(req.response, msg);
-    } else if (msg['type'] == 'gameState') {
-      jsonResponse(req.response, {
-        'type': 'gameState',
-        'message': msg['message'],
-        'from': msg['from'],
-        'gameId': msg['gameId'],
-      });
-    } else if (msg['type'] == 'gameOver') {
-      final gameId = msg['gameId'] ?? '';
-      jsonResponse(req.response, msg);
-      if (debug)
-        print(
-            '$appName v$version: gameOver reçu pour ${msg['to']} (jeu $gameId)');
+    switch (msg['type']) {
+      case 'matched':
+      case 'quit':
+        jsonResponse(req.response, msg);
+        break;
 
-      if (gameId.isNotEmpty) {
-        deleteGameId(gameId);
-        if (debug) print('$appName v$version: Jeu $gameId supprimé');
-      }
-    } else {
-      jsonResponse(req.response, {
-        'type': 'message',
-        'message': msg,
-      });
+      case 'gameState':
+        jsonResponse(req.response, {
+          'type': 'gameState',
+          'message': msg['message'],
+          'from': msg['from'],
+          'gameId': msg['gameId'],
+        });
+        break;
+
+      case 'gameOver':
+        final gameId = msg['gameId'] ?? '';
+        jsonResponse(req.response, msg);
+        if (gameId.isNotEmpty) {
+          deleteGameId(gameId);
+        }
+        break;
+
+      case 'message':
+        jsonResponse(req.response, {
+          'type': 'message',
+          'message': msg,
+        });
+        break;
+
+      default:
+        jsonResponse(req.response, {
+          'type': 'type_inconnu',
+          'message': msg,
+        });
     }
   } catch (e) {
     jsonResponse(

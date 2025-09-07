@@ -1,3 +1,28 @@
+/*
+  Handler pour l'endpoint /connect
+
+  Reçoit: { userName, expectedName, startTime }
+  Répond: { status: 'waiting' } ou { status: 'matched', gameId, partner, startTime, partnerStartTime }
+  
+  Un joueur peut avoir plusieurs parties en cours. Les parties sont identifiées par gameId. Chaque partie est représentée par 2 entrées dans players.
+  La structure de Players est:
+    userName
+    expectedName
+    partner (vide si pas encore apparié)
+    startTime
+    partnerStartTime (vide si pas encore apparié)
+    gameId (vide si pas encore apparié)
+  
+  
+  Lorsqu'un joueur se connecte, 
+    si expectedName != '' 
+      on cherche s'il a déjà une partie en cours avec ce partenaire. si oui, s'il a un message en cours on le lui envoie, sinon on répond status: 'waiting'
+    sinon on cherche une partie en cours avec un partenaire qui attend (expectedName == '' ou expectedName == userName)
+      si oui on complète les 2 entrées (partner, partnerStartTime, gameId) et on répond status: 'matched' avec les infos du partenaire
+      sinon on crée une nouvelle entrée avec partner='', gameId='' si elle n'existe pas et on répond status: 'waiting' 
+    
+   
+*/
 import 'dart:convert';
 import 'dart:io';
 import '../player_entry.dart';
@@ -5,7 +30,7 @@ import '../utils/player_utils.dart';
 import '../utils/json_utils.dart';
 import '../constants.dart';
 
-Future<void> handleRegister(HttpRequest req) async {
+Future<void> handleConnect(HttpRequest req) async {
   try {
     final body = await utf8.decoder.bind(req).join();
     final data = jsonDecode(body) as Map<String, dynamic>;

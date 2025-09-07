@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'utils/json_utils.dart';
-import 'handlers/register_handler.dart';
+import 'handlers/connect_handler.dart';
 import 'handlers/gamestate_handler.dart';
 import 'handlers/gameover_handler.dart';
 import 'handlers/poll_handler.dart';
@@ -18,8 +18,8 @@ Future<void> startServer() async {
 
   await for (final req in server) {
     try {
-      if (req.method == 'POST' && req.uri.path == '/register') {
-        await handleRegister(req);
+      if (req.method == 'POST' && req.uri.path == '/connect') {
+        await handleConnect(req);
       } else if (req.method == 'POST' && req.uri.path == '/gamestate') {
         await handleGameState(req);
       } else if (req.method == 'POST' && req.uri.path == '/gameover') {
