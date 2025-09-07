@@ -81,15 +81,41 @@ void queueMessageFor(String userName, Map<String, dynamic> message) {
 void showPlayers() {
   print(
       '[$appName v$version] Joueurs enregistrés (user : expected -> partner | gameId | message?):');
+
+  // Imprimer l'en-tête du tableau
+  print(
+      '+----------------+----------------+-----------+-----------+-------------+---------------+');
+  print(
+      '| User            | Expected       | Time      | Partner   | Game ID     | Message       |');
+  print(
+      '+----------------+----------------+-----------+-----------+-------------+---------------+');
+
+  // Parcourir et afficher chaque joueur sous forme de tableau
   for (final p in players) {
     final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
     final hms =
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+
+    // Formater chaque ligne de joueur pour une longueur fixe
+    final userName = p.userName.padRight(14).substring(0, 14);
+    final expectedName = p.expectedName.padRight(14).substring(0, 14);
+    final time = hms.padRight(9).substring(0, 9);
+    final partner =
+        p.partner.isEmpty ? '—' : p.partner.padRight(10).substring(0, 10);
+    final gameId =
+        p.gameId.isEmpty ? '—' : p.gameId.padRight(11).substring(0, 11);
+    final message = p.message == null
+        ? 'no'
+        : p.message!['type'].toString().padRight(12).substring(0, 12);
+
+    // Imprimer la ligne du tableau
     print(
-        '  - ${p.userName} : ${p.expectedName} ($hms) -> ${p.partner.isEmpty ? '—' : p.partner}'
-        ' | ${p.gameId.isEmpty ? '—' : p.gameId}'
-        ' | ${p.message == null ? 'no' : p.message!['type']}');
+        '| $userName | $expectedName | $time | $partner | $gameId | $message |');
   }
+
+  // Imprimer la fin du tableau
+  print(
+      '+----------------+----------------+-----------+-----------+-------------+---------------+');
 }
 
 void deleteGameId(String gameId) {
