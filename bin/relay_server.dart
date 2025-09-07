@@ -37,7 +37,7 @@ Future<void> startServer() async {
         req.response.statusCode = HttpStatus.ok;
         jsonResponse(req.response, {
           'status': 'success',
-          'message': 'Liste des joueurs affichée dans la console du serveur',
+          'message': showPlayersAsHTML(),
         });
       } else {
         req.response.statusCode = HttpStatus.notFound;

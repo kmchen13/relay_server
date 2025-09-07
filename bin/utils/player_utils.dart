@@ -118,6 +118,32 @@ void showPlayers() {
       '+----------------+----------------+-----------+-----------+-------------+---------------+');
 }
 
+showPlayersAsHTML() {
+  final buffer = StringBuffer();
+  buffer.writeln('<table border="1" cellpadding="5" cellspacing="0">');
+  buffer.writeln(
+      '<tr><th>User</th><th>Expected</th><th>Time</th><th>Partner</th><th>Game ID</th><th>Message</th></tr>');
+
+  for (final p in players) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
+    final hms =
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+
+    final userName = p.userName;
+    final expectedName = p.expectedName;
+    final time = hms;
+    final partner = p.partner.isEmpty ? '—' : p.partner;
+    final gameId = p.gameId.isEmpty ? '—' : p.gameId;
+    final message = p.message == null ? 'no' : p.message!['type'].toString();
+
+    buffer.writeln(
+        '<tr><td>$userName</td><td>$expectedName</td><td>$time</td><td>$partner</td><td>$gameId</td><td>$message</td></tr>');
+  }
+
+  buffer.writeln('</table>');
+  return buffer.toString();
+}
+
 void deleteGameId(String gameId) {
   players.removeWhere((p) => p.gameId == gameId);
   savePlayers();
