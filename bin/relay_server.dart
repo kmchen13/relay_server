@@ -32,13 +32,9 @@ Future<void> startServer() async {
       } else if (req.method == 'GET' && req.uri.path == '/quit') {
         await handleDisconnect(req);
       } else if (req.method == 'GET' && req.uri.path == '/admin') {
-        // Ajoutez ce bloc pour gérer la route '/admin'
-        showPlayers();
         req.response.statusCode = HttpStatus.ok;
-        jsonResponse(req.response, {
-          'status': 'success',
-          'message': showPlayersAsHTML(),
-        });
+        req.response.headers.contentType = ContentType.html;
+        req.response.write(showPlayersAsHTML());
       } else {
         req.response.statusCode = HttpStatus.notFound;
         jsonResponse(req.response, {
