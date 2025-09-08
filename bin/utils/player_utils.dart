@@ -23,12 +23,10 @@ Future<void> loadPlayers() async {
   final contents = await file.readAsString();
   final List<dynamic> jsonList = jsonDecode(contents);
   players = jsonList.map((row) => PlayerEntry.fromRow(row)).toList();
-  if (debug) showPlayers();
 }
 
 Future<void> removePlayerGame(player, partner) async {
   players.removeWhere((p) => p.userName == player && p.partner == partner);
-
   savePlayers();
 }
 
@@ -58,12 +56,12 @@ PlayerEntry? findMatchingCounterpart(String me, String myExpected) {
 
 /// Vérifie si deux joueurs sont déjà dans une même partie.
 /// Retourne leur gameId si trouvé, sinon `null`.
-String? findInGame(String userName, String expectedName) {
+PlayerEntry? findInGame(String userName, String expectedName) {
   for (final p in players) {
     if (p.userName == userName &&
         p.partner == expectedName &&
         p.gameId.isNotEmpty) {
-      return p.gameId;
+      return p;
     }
   }
   return null;
@@ -90,10 +88,8 @@ void showPlayers() {
       '[$appName v$version] Joueurs enregistrés (user : expected -> partner | gameId | message?):');
 
   // Imprimer l'en-tête du tableau
-  print(
-      '| User            | Expected       | Time      | Partner   | Game ID     | Message       |');
-  print(
-      '+----------------+----------------+-----------+-----------+-------------+---------------+');
+  print('| User|Expct|  Time   |Prtnr|  Game ID  |Message|');
+  print('+-----+-----+---------+-----+-----------+-------+');
 
   // Parcourir et afficher chaque joueur sous forme de tableau
   for (final p in players) {
@@ -102,16 +98,16 @@ void showPlayers() {
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
 
     // Formater chaque ligne de joueur pour une longueur fixe
-    final userName = p.userName.padRight(14).substring(0, 14);
-    final expectedName = p.expectedName.padRight(14).substring(0, 14);
+    final userName = p.userName.padRight(5).substring(0, 5);
+    final expectedName = p.expectedName.padRight(5).substring(0, 5);
     final time = hms.padRight(9).substring(0, 9);
     final partner =
-        p.partner.isEmpty ? '—' : p.partner.padRight(10).substring(0, 10);
+        p.partner.isEmpty ? '  —  ' : p.partner.padRight(5).substring(0, 5);
     final gameId =
-        p.gameId.isEmpty ? '—' : p.gameId.padRight(11).substring(0, 11);
+        p.gameId.isEmpty ? '  —  ' : p.gameId.padRight(11).substring(0, 11);
     final message = p.message == null
         ? 'no'
-        : p.message!['type'].toString().padRight(12).substring(0, 12);
+        : p.message!['type'].toString().padRight(7).substring(0, 7);
 
     // Imprimer la ligne du tableau
     print(
