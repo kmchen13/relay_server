@@ -10,6 +10,10 @@ Future<void> handleConnect(HttpRequest req) async {
     final body = await utf8.decoder.bind(req).join();
     final data = jsonDecode(body) as Map<String, dynamic>;
     final String userName = (data['userName'] ?? '').toString();
+    if (userName.isEmpty) {
+      jsonResponse(req.response, {'status': 'Invalid_connect_parameters'});
+      return;
+    }
     final String expectedName = (data['expectedName'] ?? '').toString();
     final int startTime = (data['startTime'] ?? 0) is int
         ? data['startTime'] as int
@@ -19,7 +23,7 @@ Future<void> handleConnect(HttpRequest req) async {
 
     if (debug) {
       print(
-          "[$appName v$version] 🔔 /connect $userName expected=$expectedName start=$startTime");
+          "[$appName v$version] 🔔 /connect player=$userName expected=$expectedName start=$startTime");
     }
     var me = findOpenEntry(userName, expectedName);
     me ??= PlayerEntry(

@@ -33,7 +33,7 @@ Future<void> startServer() async {
         await handlePoll(req);
       } else if (req.method == 'GET' && rqt == '/disconnect') {
         await handleDisconnect(req);
-      } else if (req.method == 'GET' && rqt == '/quit') {
+      } else if (req.method == 'POST' && rqt == '/quit') {
         await handleDisconnect(req);
       } else if (req.method == 'GET' && rqt == '/admin') {
         req.response.statusCode = HttpStatus.ok;
