@@ -98,13 +98,11 @@ void showPlayers() {
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
 
     // Formater chaque ligne de joueur pour une longueur fixe
-    final userName = p.userName.padRight(5).substring(0, 2);
-    final expectedName = p.expectedName.padRight(5).substring(0, 2);
+    final userName = p.userName.substring(0, 3);
+    final expectedName = p.expectedName.substring(0, 3);
     final time = hms.padRight(9);
-    final partner =
-        p.partner.isEmpty ? '  —  ' : p.partner.padRight(3).substring(0, 2);
-    final gameId =
-        p.gameId.isEmpty ? '  —  ' : p.gameId.padRight(5).substring(4);
+    final partner = p.partner.isEmpty ? ' — ' : p.partner.substring(0, 3);
+    final gameId = p.gameId.isEmpty ? ' — ' : p.gameId.substring(5);
     final message = p.message == null
         ? 'no'
         : p.message!['type'].toString().padRight(9).substring(0, 7);
