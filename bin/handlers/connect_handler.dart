@@ -20,14 +20,12 @@ Future<void> handleConnect(HttpRequest req) async {
     if (debug) {
       print(
           "[$appName v$version] 🔔 /connect $userName expected=$expectedName start=$startTime");
-      showPlayers();
     }
     var me = findOpenEntry(userName, expectedName);
     me ??= PlayerEntry(
         userName: userName, expectedName: expectedName, startTime: startTime);
     if (!players.contains(me)) players.add(me);
     await savePlayers();
-    if (debug) showPlayers();
 
     final match = findMatchingCounterpart(userName, expectedName);
     if (match != null) {

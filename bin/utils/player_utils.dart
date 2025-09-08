@@ -99,7 +99,8 @@ void showPlayers() {
 
     // Formater chaque ligne de joueur pour une longueur fixe
     final userName = p.userName.substring(0, 3);
-    final expectedName = p.expectedName.substring(0, 3);
+    final expectedName =
+        p.expectedName.isEmpty ? ' - ' : p.expectedName.substring(0, 3);
     final time = hms.padRight(9);
     final partner = p.partner.isEmpty ? ' — ' : p.partner.substring(0, 3);
     final gameId = p.gameId.isEmpty ? ' — ' : p.gameId.substring(5);
