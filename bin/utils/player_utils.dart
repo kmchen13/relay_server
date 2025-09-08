@@ -10,6 +10,7 @@ Future<void> savePlayers() async {
   final file = File('players.json');
   final jsonList = players.map((p) => p.asRow()).toList();
   await file.writeAsString(jsonEncode(jsonList));
+  if (debug) showPlayers();
 }
 
 /// Charger la liste des players depuis un fichier JSON
@@ -22,6 +23,13 @@ Future<void> loadPlayers() async {
   final contents = await file.readAsString();
   final List<dynamic> jsonList = jsonDecode(contents);
   players = jsonList.map((row) => PlayerEntry.fromRow(row)).toList();
+  if (debug) showPlayers();
+}
+
+Future<void> removePlayerGame(player, partner) async {
+  players.removeWhere((p) => p.userName == player && p.partner == partner);
+
+  savePlayers();
 }
 
 PlayerEntry? findOpenEntry(String userName, String expectedName) {
@@ -83,8 +91,6 @@ void showPlayers() {
 
   // Imprimer l'en-tête du tableau
   print(
-      '+----------------+----------------+-----------+-----------+-------------+---------------+');
-  print(
       '| User            | Expected       | Time      | Partner   | Game ID     | Message       |');
   print(
       '+----------------+----------------+-----------+-----------+-------------+---------------+');
@@ -111,10 +117,6 @@ void showPlayers() {
     print(
         '| $userName | $expectedName | $time | $partner | $gameId | $message |');
   }
-
-  // Imprimer la fin du tableau
-  print(
-      '+----------------+----------------+-----------+-----------+-------------+---------------+');
 }
 
 showPlayersAsHTML() {

@@ -17,33 +17,26 @@ Future<void> handleQuit(HttpRequest req) async {
       return;
     }
 
-    final me = players.firstWhere(
-      (p) => p.userName == userName && p.partner == partner,
-      orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
-    );
+    final gameInCourse = findInGame(userName, partner);
 
-    if (me.userName.isEmpty) {
+    if (gameInCourse == null) {
       jsonResponse(req.response, {'status': 'player_not_found'});
       return;
     }
+    removePlayerGame(gameInCourse, partner);
 
     // Prévenir le partenaire s'il existe
-    if (me.partner.isNotEmpty) {
-      queueMessageFor(me.partner, {
+    if (gameInCourse.partner.isNotEmpty) {
+      queueMessageFor(gameInCourse.partner, {
         'type': 'quit',
-        'gameId': me.gameId,
-        'from': me.userName,
+        'gameId': gameInCourse.gameId,
+        'from': gameInCourse.userName,
       });
     }
-
-    // Supprimer le joueur
-    players.removeWhere((p) => p.userName == me.userName);
-
-    await savePlayers();
-    if (debug) showPlayers();
-
     jsonResponse(req.response, {'status': 'quit_success'});
-    print("[$appName v$version] 🛑 ${me.userName} a quitté la partie");
+    if (debug)
+      print(
+          "[$appName v$version] 🛑 ${gameInCourse.userName} a quitté la partie");
   } catch (e) {
     jsonResponse(
         req.response, {'error': 'invalid_request', 'details': e.toString()},
