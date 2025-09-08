@@ -67,12 +67,13 @@ Future<void> handleConnect(HttpRequest req) async {
     } else {
       jsonResponse(req.response, {'status': 'waiting'});
     }
-  } catch (e) {
+  } catch (e, s) {
     jsonResponse(
         req.response,
         {
           'error': 'invalid_request',
-          'details': e.toString(),
+          'exception': e.toString(),
+          'stack': s.toString(),
         },
         statusCode: HttpStatus.badRequest);
   }

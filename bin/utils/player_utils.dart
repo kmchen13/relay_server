@@ -88,8 +88,8 @@ void showPlayers() {
       '[$appName v$version] Joueurs enregistrés (user : expected -> partner | gameId | message?):');
 
   // Imprimer l'en-tête du tableau
-  print('| User|Expct|  Time   |Prtnr|  Game ID  |Message|');
-  print('+-----+-----+---------+-----+-----------+-------+');
+  print('| Usr |Expct|  Time    |Prtnr| GID |Message|');
+  print('+-----+-----+----------+-----+-----+-------');
 
   // Parcourir et afficher chaque joueur sous forme de tableau
   for (final p in players) {

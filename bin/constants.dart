@@ -2,4 +2,4 @@ library constants;
 
 const bool debug = true;
 const String appName = "Relay_server";
-const String version = "1.3.7";
+const String version = "1.3.8";
