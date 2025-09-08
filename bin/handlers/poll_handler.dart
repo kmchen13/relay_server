@@ -14,8 +14,8 @@ Future<void> handlePoll(HttpRequest req) async {
       orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
     );
 
-    print(
-        "[$appName v$version] 📡 /poll $userName (message? ${withMsg.message != null})");
+    // print(
+    //     "[$appName v$version] 📡 /poll $userName (message? ${withMsg.message != null})");
 
     if (withMsg.userName.isEmpty) {
       jsonResponse(req.response, {

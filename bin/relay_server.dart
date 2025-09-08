@@ -15,23 +15,27 @@ void main() async {
 Future<void> startServer() async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
   print(
-      "[$appName v$version] HTTP polling sur http://${server.address.address}:${server.port}");
+      "[$appName v$version] HTTP relay_server started sur http://${server.address.address}:${server.port}");
 
   await for (final req in server) {
+    final rqt = req.uri.path;
+    if (debug) {
+      print("[$appName v$version] ➡️ Réception requête ${req.method} $rqt");
+    }
     try {
-      if (req.method == 'POST' && req.uri.path == '/connect') {
+      if (req.method == 'POST' && rqt == '/connect') {
         await handleConnect(req);
-      } else if (req.method == 'POST' && req.uri.path == '/gamestate') {
+      } else if (req.method == 'POST' && rqt == '/gamestate') {
         await handleGameState(req);
-      } else if (req.method == 'POST' && req.uri.path == '/gameover') {
+      } else if (req.method == 'POST' && rqt == '/gameover') {
         await handleGameOver(req);
-      } else if (req.method == 'GET' && req.uri.path == '/poll') {
+      } else if (req.method == 'GET' && rqt == '/poll') {
         await handlePoll(req);
-      } else if (req.method == 'GET' && req.uri.path == '/disconnect') {
+      } else if (req.method == 'GET' && rqt == '/disconnect') {
         await handleDisconnect(req);
-      } else if (req.method == 'GET' && req.uri.path == '/quit') {
+      } else if (req.method == 'GET' && rqt == '/quit') {
         await handleDisconnect(req);
-      } else if (req.method == 'GET' && req.uri.path == '/admin') {
+      } else if (req.method == 'GET' && rqt == '/admin') {
         req.response.statusCode = HttpStatus.ok;
         req.response.headers.contentType = ContentType.html;
         req.response.write(showPlayersAsHTML());
