@@ -15,8 +15,9 @@ Future<void> handleQuit(HttpRequest req) async {
     if (userName.isEmpty || partner.isEmpty) {
       jsonResponse(req.response, {'status': 'Invalid_quit_parameters'});
       return;
+    } else if (debug) {
+      print("[$appName v$version] 🔔 /quit $userName - $partner");
     }
-
     final gameInCourse = findInGame(userName, partner);
 
     if (gameInCourse == null) {
