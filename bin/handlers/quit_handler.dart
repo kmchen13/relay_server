@@ -14,6 +14,7 @@ Future<void> handleQuit(HttpRequest req) async {
 
     if (userName.isEmpty || partner.isEmpty) {
       jsonResponse(req.response, {'status': 'Invalid_quit_parameters'});
+      print("[$appName v$version] 🔔 Invalid_quit_parameters '$data'");
       return;
     } else if (debug) {
       print("[$appName v$version] 🔔 /quit $userName - $partner");
