@@ -5,6 +5,7 @@ import 'handlers/gamestate_handler.dart';
 import 'handlers/gameover_handler.dart';
 import 'handlers/poll_handler.dart';
 import 'handlers/disconnect_handler.dart';
+import 'handlers/quit_handler.dart';
 import 'constants.dart';
 import 'utils/player_utils.dart';
 
@@ -32,7 +33,7 @@ Future<void> startServer() async {
       } else if (req.method == 'GET' && rqt == '/disconnect') {
         await handleDisconnect(req);
       } else if (req.method == 'POST' && rqt == '/quit') {
-        await handleDisconnect(req);
+        await handleQuit(req);
       } else if (req.method == 'GET' && rqt == '/admin') {
         req.response.statusCode = HttpStatus.ok;
         req.response.headers.contentType = ContentType.html;
