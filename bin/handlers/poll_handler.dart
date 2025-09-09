@@ -1,9 +1,7 @@
-import 'dart:developer';
 import 'dart:io';
 import '../utils/player_utils.dart';
 import '../utils/json_utils.dart';
 import '../player_entry.dart';
-import '../constants.dart';
 
 Future<void> handlePoll(HttpRequest req) async {
   await loadPlayers();

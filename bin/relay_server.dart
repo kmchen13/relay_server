@@ -19,9 +19,7 @@ Future<void> startServer() async {
 
   await for (final req in server) {
     final rqt = req.uri.path;
-    if (debug) {
-      print("[$appName v$version] ➡️ Réception requête ${req.method} $rqt");
-    }
+
     try {
       if (req.method == 'POST' && rqt == '/connect') {
         await handleConnect(req);
