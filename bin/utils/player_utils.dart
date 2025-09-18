@@ -84,8 +84,7 @@ void queueMessageFor(String userName, Map<String, dynamic> message) {
 }
 
 void showPlayers() {
-  print(
-      '[$appName v$version] Joueurs enregistrés (user : expected -> partner | gameId | message?):');
+  print('[$appName v$version] Joueurs enregistrés:');
 
   // Imprimer l'en-tête du tableau
   print('| Usr |Expct|  Time    |Prtnr| GID |Message|');

@@ -24,7 +24,7 @@ Future<void> handleQuit(HttpRequest req) async {
       jsonResponse(req.response, {'status': 'player_not_found'});
       return;
     }
-    removePlayerGame(gameInCourse, partner);
+    removePlayerGame(userName, partner);
 
     // Prévenir le partenaire s'il existe
     if (gameInCourse.partner.isNotEmpty) {
