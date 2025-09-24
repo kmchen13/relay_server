@@ -29,45 +29,39 @@ Future<void> handleConnect(HttpRequest req) async {
     me ??= PlayerEntry(
         userName: userName, expectedName: expectedName, startTime: startTime);
     if (!players.contains(me)) players.add(me);
+
     await savePlayers();
 
     final match = findMatchingCounterpart(userName, expectedName);
     if (match != null) {
-      // 🔑 Réutiliser un gameId existant si déjà assigné
-      final gameId = me.gameId.isNotEmpty
-          ? me.gameId
-          : (match.gameId.isNotEmpty
-              ? match.gameId
-              : DateTime.now().millisecondsSinceEpoch.toString());
-
       me.partner = match.userName;
       me.partnerStartTime = match.startTime;
-      me.gameId = gameId;
 
       match.partner = me.userName;
       match.partnerStartTime = me.startTime;
-      match.gameId = gameId;
 
       jsonResponse(req.response, {
         'status': 'matched',
-        'gameId': gameId,
         'partner': match.userName,
         'startTime': me.startTime,
         'partnerStartTime': match.startTime,
       });
 
-      queueMessageFor(match.userName, {
+      queueMessageFor(match.userName, me.userName, {
         'type': 'matched',
-        'gameId': gameId,
         'partner': me.userName,
         'startTime': match.startTime,
         'partnerStartTime': me.startTime,
       });
 
-      print(
-          "[$appName v$version] ✅ Match: ${me.userName} ↔ ${match.userName} (gameId=$gameId)");
+      if (debug)
+        print(
+            "[$appName v$version] ✅ Match: ${me.userName} ↔ ${match.userName} ");
     } else {
       jsonResponse(req.response, {'status': 'waiting'});
+      if (debug)
+        print(
+            "[$appName v$version] ✅ ${userName} Waiting for: '${expectedName}'");
     }
   } catch (e, s) {
     jsonResponse(

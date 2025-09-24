@@ -13,7 +13,8 @@ Future<void> handleGameState(HttpRequest req) async {
     final String to = (data['to'] ?? '').toString();
     final message = data['message'];
 
-    if (debug) print("[$appName v$version] 🎲 /gamestate de $from → $to");
+    if (debug)
+      print("[$appName v$version] 🎲 /gamestate de $from → $to \n\n$message");
 
     final target = players.lastWhere(
       (p) =>
@@ -36,11 +37,10 @@ Future<void> handleGameState(HttpRequest req) async {
       return;
     }
 
-    queueMessageFor(to, {
+    queueMessageFor(to, from, {
       'type': 'gameState',
       'from': from,
       'to': to,
-      'gameId': target.gameId,
       'message': message,
     });
 

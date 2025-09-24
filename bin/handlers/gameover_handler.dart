@@ -35,11 +35,10 @@ Future<void> handleGameOver(HttpRequest req) async {
       return;
     }
 
-    queueMessageFor(to, {
+    queueMessageFor(to, from, {
       'type': 'gameOver',
       'from': from,
       'to': to,
-      'gameId': target.gameId,
       'message': message,
     });
 

@@ -27,11 +27,11 @@ Future<void> handleQuit(HttpRequest req) async {
     removePlayerGame(userName, partner);
 
     // Prévenir le partenaire s'il existe
-    if (gameInCourse.partner.isNotEmpty) {
-      queueMessageFor(gameInCourse.partner, {
+    if (gameInCourse != null) {
+      queueMessageFor(gameInCourse.partner, gameInCourse.userName, {
         'type': 'quit',
-        'gameId': gameInCourse.gameId,
         'from': gameInCourse.userName,
+        'to': gameInCourse.partner,
       });
     }
     jsonResponse(req.response, {'status': 'quit_success'});
@@ -43,4 +43,5 @@ Future<void> handleQuit(HttpRequest req) async {
         req.response, {'error': 'invalid_request', 'details': e.toString()},
         statusCode: HttpStatus.badRequest);
   }
+  //Afficher "Vous avez quitté la partie" sur l'app du joueur qui a quitté
 }

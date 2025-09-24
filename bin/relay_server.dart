@@ -6,6 +6,7 @@ import 'handlers/gameover_handler.dart';
 import 'handlers/poll_handler.dart';
 import 'handlers/disconnect_handler.dart';
 import 'handlers/quit_handler.dart';
+import 'handlers/admin_handler.dart';
 import 'constants.dart';
 import 'utils/player_utils.dart';
 
@@ -34,10 +35,8 @@ Future<void> startServer() async {
         await handleDisconnect(req);
       } else if (req.method == 'POST' && rqt == '/quit') {
         await handleQuit(req);
-      } else if (req.method == 'GET' && rqt == '/admin') {
-        req.response.statusCode = HttpStatus.ok;
-        req.response.headers.contentType = ContentType.html;
-        req.response.write(showPlayersAsHTML());
+      } else if (rqt.startsWith('/admin')) {
+        await handleAdmin(req);
       } else {
         req.response.statusCode = HttpStatus.notFound;
         jsonResponse(req.response, {

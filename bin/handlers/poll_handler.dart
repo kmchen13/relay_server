@@ -2,6 +2,7 @@ import 'dart:io';
 import '../utils/player_utils.dart';
 import '../utils/json_utils.dart';
 import '../player_entry.dart';
+import '../constants.dart';
 
 Future<void> handlePoll(HttpRequest req) async {
   await loadPlayers();
@@ -25,11 +26,14 @@ Future<void> handlePoll(HttpRequest req) async {
 
     final msg = withMsg.message!;
     withMsg.message = null;
-    await savePlayers();
+    savePlayers();
 
     switch (msg['type']) {
       case 'matched':
       case 'quit':
+        if (debug)
+          print(
+              "Message ${msg['type']} sent to $userName from '${msg['partner']}'");
         jsonResponse(req.response, msg);
         break;
 
@@ -38,16 +42,17 @@ Future<void> handlePoll(HttpRequest req) async {
           'type': 'gameState',
           'message': msg['message'],
           'from': msg['from'],
-          'gameId': msg['gameId'],
         });
+        if (debug)
+          print(
+              "Message ${msg['type']} sent to $userName from '${msg['partner']}'");
         break;
 
       case 'gameOver':
-        final gameId = msg['gameId'] ?? '';
         jsonResponse(req.response, msg);
-        if (gameId.isNotEmpty) {
-          deleteGameId(gameId);
-        }
+        final from = msg['from'];
+        final to = msg['to'];
+        removePlayerGame(from, to);
         break;
 
       case 'message':
