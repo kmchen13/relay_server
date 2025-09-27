@@ -8,7 +8,6 @@ import 'handlers/disconnect_handler.dart';
 import 'handlers/quit_handler.dart';
 import 'handlers/admin_handler.dart';
 import 'constants.dart';
-import 'utils/player_utils.dart';
 
 void main() async {
   await startServer();
