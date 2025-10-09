@@ -1,57 +1,36 @@
 import 'dart:convert';
 import 'dart:io';
+import '../services/player_repository.dart';
 import '../utils/player_utils.dart';
 import '../utils/json_utils.dart';
-import '../player_entry.dart';
 import '../constants.dart';
 
-Future<void> handleGameState(HttpRequest req) async {
+Future<void> handleGameState(HttpRequest req, PlayerRepository repo) async {
   try {
     final body = await utf8.decoder.bind(req).join();
     final data = jsonDecode(body) as Map<String, dynamic>;
     final String from = (data['from'] ?? '').toString();
     final String to = (data['to'] ?? '').toString();
-    final message = data['message'];
-
-    if (debug)
-      print("[$appName v$version] 🎲 /gamestate de $from → $to \n\n$message");
-
-    final target = players.lastWhere(
-      (p) =>
-          p.userName == to &&
-          (p.partner == from ||
-              p.expectedName == from ||
-              p.expectedName.isEmpty),
-      orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
-    );
-
-    if (target.userName.isEmpty) {
-      jsonResponse(
-          req.response,
-          {
-            'status': 'partner_not_found',
-            'message': 'Partenaire non trouvé',
-          },
-          statusCode: HttpStatus.notFound);
-      showPlayers();
-      return;
+    var message = data['message'];
+    if (message is String) {
+      message = jsonDecode(message);
+    }
+    if (debug) {
+      print("[$appName v$version] 🎲 /gamestate de $from → $to \n\n $message");
     }
 
-    queueMessageFor(to, from, {
+    await queueMessageFor(repo, to, from, {
       'type': 'gameState',
       'from': from,
       'to': to,
-      'message': message,
+      'message': jsonEncode(message), // ✅ re-stringification ici
     });
-
     jsonResponse(req.response, {'status': 'sent'});
   } catch (e) {
-    jsonResponse(
-        req.response,
-        {
-          'error': 'invalid_request',
-          'details': e.toString(),
-        },
-        statusCode: HttpStatus.badRequest);
+    if (debug) {
+      print("[$appName v$version] ❌ Erreur /gamestate: $e");
+    }
+    jsonResponse(req.response, {'status': 'Error', 'message': e.toString()},
+        statusCode: 500);
   }
 }

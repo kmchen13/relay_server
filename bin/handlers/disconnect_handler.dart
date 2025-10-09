@@ -1,23 +1,8 @@
 import 'dart:io';
-import '../utils/player_utils.dart';
-import '../utils/json_utils.dart';
+import '../services/player_repository.dart';
 
-Future<void> handleDisconnect(HttpRequest req) async {
-  final userName = req.uri.queryParameters['userName'] ?? '';
-
-  if (userName == '') {
-    req.response.statusCode = HttpStatus.badRequest;
-    return jsonResponse(req.response, {
-      'error': 'missing_parameters',
-      'message': 'userName et expectedName sont requis',
-    });
-  }
-  players.removeWhere((p) => p.userName == userName && p.expectedName == '');
-  savePlayers();
-
-  req.response.statusCode = HttpStatus.ok;
-  return jsonResponse(req.response, {
-    'status': 'disconnected',
-    'message': '$userName déconnecté avec succès',
-  });
+Future<void> handleDisconnect(HttpRequest req, PlayerRepository repo) async {
+  print("handleDisconnect should never be called");
+  // This endpoint is no longer used. Si un joueur s'est connecté, puis déconnecté, il reste elligible pour une nouvelle partie.
+  // Todo: remove player from repo if needed or after a timeout
 }

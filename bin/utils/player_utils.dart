@@ -1,143 +1,160 @@
 import '../player_entry.dart';
 import '../constants.dart';
+import '../services/player_repository.dart';
 import 'dart:convert';
-import 'dart:io';
 
-List<PlayerEntry> players = [];
+/// Trouver une entrée de joueur ouverte (sans partenaire)
+Future<PlayerEntry?> findOpenEntry(
+  PlayerRepository repo,
+  String userName,
+  String expectedName,
+) async {
+  final results = await repo.connection.query(
+    'SELECT * FROM players WHERE userName = @userName AND expectedName = @expectedName AND partner = \'\'',
+    substitutionValues: {'userName': userName, 'expectedName': expectedName},
+  );
 
-/// Sauvegarder la liste des players dans un fichier JSON
-Future<void> savePlayers() async {
-  final file = File('players.json');
-  final jsonList = players.map((p) => p.asRow()).toList();
-  await file.writeAsString(jsonEncode(jsonList));
-  if (debug) showPlayers();
+  if (results.isEmpty) return null;
+  return PlayerEntry.fromRow(results.first.toColumnMap());
 }
 
-/// Charger la liste des players depuis un fichier JSON
-Future<void> loadPlayers() async {
-  final file = File('players.json');
-  if (!await file.exists()) {
-    players = [];
-    return;
-  }
-  final contents = await file.readAsString();
-  final List<dynamic> jsonList = jsonDecode(contents);
-  players = jsonList.map((row) => PlayerEntry.fromRow(row)).toList();
+/// Trouver un joueur correspondant pour le matching
+Future<PlayerEntry?> findMatchingCounterpart(
+  PlayerRepository repo,
+  String me,
+  String myExpected,
+) async {
+  final results = await repo.connection.query(
+    '''
+    SELECT * FROM players 
+    WHERE partner = '' AND userName != @me 
+      AND (expectedName = @me OR expectedName = '') 
+      AND (@myExpected = '' OR expectedName = @myExpected)
+    ''',
+    substitutionValues: {'me': me, 'myExpected': myExpected},
+  );
+
+  if (results.isEmpty) return null;
+  return PlayerEntry.fromRow(results.first.toColumnMap());
 }
 
-/// Supprimer l'entrée d'une partie d'un joueur. (l'autre joueur doit être supprimé séparément après réception du message gameOver ou quit)
-Future<void> removePlayerGame(player, partner) async {
-  players.removeWhere((p) => p.userName == player && p.partner == partner);
-  savePlayers();
-}
+/// Vérifie si deux joueurs sont déjà dans une même partie
+Future<PlayerEntry?> findInGame(
+  PlayerRepository repo,
+  String userName,
+  String expectedName,
+) async {
+  final results = await repo.connection.query(
+    'SELECT * FROM players WHERE userName = @userName AND partner = @partner',
+    substitutionValues: {'userName': userName, 'partner': expectedName},
+  );
 
-/// Trouver une entrée de joueur ouverte (sans partenaire) correspondant au nom d'utilisateur et au nom attendu.
-PlayerEntry? findOpenEntry(String userName, String expectedName) {
-  return players
-      .where((p) =>
-          p.userName == userName &&
-          p.expectedName == expectedName &&
-          p.partner.isEmpty)
-      .lastOrNull;
-}
-
-/// Trouver un joueur correspondant pour le matching.
-/// Le jumelage peut être explicite (les deux joueurs se recherchent mutuellement)
-/// ou aléatoire (les deux joueurs n'ont pas de nom attendu).
-PlayerEntry? findMatchingCounterpart(String me, String myExpected) {
-  for (final p in players) {
-    final explicitPair = (p.userName == myExpected && p.expectedName == me);
-    final randomPair =
-        (myExpected.isEmpty && p.expectedName.isEmpty && p.userName != me);
-
-    if (findInGame(me, p.userName) != null) continue;
-
-    if (p.partner.isEmpty && (explicitPair || randomPair)) {
-      return p;
-    }
-  }
-  return null;
-}
-
-/// Vérifie si deux joueurs sont déjà dans une même partie.
-PlayerEntry? findInGame(String userName, String expectedName) {
-  for (final p in players) {
-    if (p.userName == userName && p.partner == expectedName) {
-      return p;
-    }
-  }
-  return null;
+  if (results.isEmpty) return null;
+  return PlayerEntry.fromRow(results.first.toColumnMap());
 }
 
 /// Mettre en file un message pour un joueur spécifique.
-void queueMessageFor(userName, partner, Map<String, dynamic> message) {
-  final target = findInGame(userName, partner);
-  if (target == null) {
-    if (debug)
-      print(
-          "[$appName v$version] ⚠️ Impossible de placer le message: joueur $userName introuvable");
-    return;
-  } else {
-    target.message = message;
-    if (debug)
-      print(
-          "[$appName v$version] 📩 Message en file pour $userName: ${message['type']}");
+/// Si aucune entrée (from → to) n'existe encore, elle est créée.
+Future<void> queueMessageFor(
+  PlayerRepository repo,
+  String targetUser,
+  String fromUser,
+  Map<String, dynamic> msg,
+) async {
+  // Copie défensive du message
+  final safeMsg = Map<String, dynamic>.from(msg);
 
-    savePlayers();
+  // Tente de récupérer le joueur cible
+  var target = await repo.getPlayer(targetUser);
+
+  // Si aucune entrée n'existe encore pour ce joueur, la créer
+  if (target == null) {
+    if (debug) {
+      print(
+          "🆕 Création d'une nouvelle PlayerEntry pour $targetUser (from $fromUser)");
+    }
+
+    target = PlayerEntry(
+      userName: targetUser,
+      expectedName: fromUser, // ou vide, mais utile pour cohérence
+      partner: fromUser,
+      startTime: 0, // non utilisé, valeur neutre
+      partnerStartTime: 0,
+      message: safeMsg,
+    );
+
+    await repo.upsertPlayer(target);
+  } else {
+    // Sinon, mettre à jour le message existant
+    target.message = safeMsg;
+    await repo.updateMessage(targetUser, target.partner, safeMsg);
+  }
+
+  if (debug) {
+    print(
+        "💌 Message mis en file pour $targetUser depuis $fromUser: ${jsonEncode(safeMsg)}");
   }
 }
 
-/// Afficher la liste des joueurs dans la console pour le débogage.
-void showPlayers() {
-  if (debug) print('[$appName v$version] Joueurs enregistrés:');
+/// Afficher la liste des joueurs dans la console pour le débogage
+Future<void> showPlayers(PlayerRepository repo) async {
+  final results = await repo.connection.query('SELECT * FROM players');
+  if (!debug) return;
 
-  // Imprimer l'en-tête du tableau
-  if (debug) print('| Usr |Expct|  Time    |Prtnr|Message|');
-  if (debug) print('+-----+-----+----------+-----+-------');
+  print('[$appName v$version] Joueurs enregistrés:');
+  print('| Usr |Expct|  Time    |Prtnr|Message|');
+  print('+-----+-----+----------+-----+-------');
 
-  // Parcourir et afficher chaque joueur sous forme de tableau
-  for (final p in players) {
+  for (final row in results) {
+    final p = PlayerEntry.fromRow(row.toColumnMap());
     final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
     final hms =
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
 
-    // Formater chaque ligne de joueur pour une longueur fixe
-    final userName = p.userName.substring(0, 3);
-    final expectedName =
-        p.expectedName.isEmpty ? ' - ' : p.expectedName.substring(0, 3);
-    final time = hms.padRight(9);
-    final partner = p.partner.isEmpty ? ' — ' : p.partner.substring(0, 3);
+    final userName =
+        p.userName.length > 3 ? p.userName.substring(0, 3) : p.userName;
+    final expectedName = p.expectedName.isEmpty
+        ? ' - '
+        : p.expectedName.length > 3
+            ? p.expectedName.substring(0, 3)
+            : p.expectedName;
+    final partner = p.partner.isEmpty
+        ? ' — '
+        : p.partner.length > 3
+            ? p.partner.substring(0, 3)
+            : p.partner;
     final message = p.message == null
         ? 'no'
         : p.message!['type'].toString().padRight(9).substring(0, 7);
 
-    // Imprimer la ligne du tableau
-    if (debug)
-      print('| $userName | $expectedName | $time | $partner | $message |');
+    print('| $userName | $expectedName | $hms | $partner | $message |');
   }
 }
 
-/// Générer une représentation HTML de la liste des joueurs pour l'affichage dans un navigateur.
-showPlayersAsHTML() {
+/// Générer une représentation HTML de la liste des joueurs
+Future<String> showPlayersAsHTML(PlayerRepository repo) async {
+  final results = await repo.connection.query('SELECT * FROM players');
   final buffer = StringBuffer();
+
   buffer.writeln('<h1>$appName v$version</h1>');
   buffer.writeln('<table border="1" cellpadding="5" cellspacing="0">');
   buffer.writeln(
       '<tr><th>User</th><th>Expected</th><th>Time</th><th>Partner</th><th>Message</th></tr>');
 
-  for (final p in players) {
+  for (final row in results) {
+    final p =
+        PlayerEntry.fromPgRow(row); // ← conversion sécurisée depuis PostgreSQL
     final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
     final hms =
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
 
     final userName = p.userName;
     final expectedName = p.expectedName;
-    final time = hms;
     final partner = p.partner.isEmpty ? '—' : p.partner;
     final message = p.message == null ? 'no' : p.message!['type'].toString();
 
     buffer.writeln(
-        '<tr><td>$userName</td><td>$expectedName</td><td>$time</td><td>$partner</td><td>$message</td></tr>');
+        '<tr><td>$userName</td><td>$expectedName</td><td>$hms</td><td>$partner</td><td>$message</td></tr>');
   }
 
   buffer.writeln('</table>');

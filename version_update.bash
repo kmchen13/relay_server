@@ -2,7 +2,7 @@
 set -e
 
 # Chemin vers ton fichier constants.dart
-CONSTANTS_FILE="/data/flutter/scrabble_chen/lib/constants.dart"
+CONSTANTS_FILE="/data/flutter/relay_server/bin/constants.dart"
 
 # Récupération de la dernière version via ton script
 VERSION=$(./version_last.bash)
@@ -15,4 +15,4 @@ fi
 # Mise à jour de la constante dans constants.dart
 sed -i "s/^const String version = \".*\";/const String version = \"$VERSION\";/" "$CONSTANTS_FILE"
 
-echo "✅ constants.dart mis à jour avec version = $VERSION"
+echo "✅ $CONSTANTS_FILE mis à jour avec version = $VERSION"

@@ -4,3 +4,6 @@
 1.3.0 Affichage /admin/showPlayers en tableau
 1.4.0 Ajout reset plyers - compatible scrabble_P2P 1.6.0
 1.4.1 Ajout version_last et Ajout de .git/hooks/pre-commit
+1.5.0 Passage en BDD POSTGRES
+1.6.0 Création entrées players si poll reçu et entrée existe pas (perte de données). Passage chez Neon pour BDD.
+1.6.1 Corrections conversions JSON / POSTGRES

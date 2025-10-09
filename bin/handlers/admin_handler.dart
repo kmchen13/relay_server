@@ -1,10 +1,11 @@
 import 'dart:io';
 import '../utils/player_utils.dart';
+import '../services/player_repository.dart';
 
-Future<void> handleAdmin(HttpRequest req) async {
+Future<void> handleAdmin(HttpRequest req, PlayerRepository repo) async {
   if (req.uri.path == '/admin/clear' && req.method == 'POST') {
-    players.clear();
-    await savePlayers();
+    // Supprimer tous les joueurs dans la BDD
+    await repo.clearAllPlayers();
 
     // Redirection HTTP vers /admin
     req.response.statusCode = HttpStatus.found; // 302
@@ -13,9 +14,10 @@ Future<void> handleAdmin(HttpRequest req) async {
     return;
   }
 
-  // page admin par défaut
+  // Page admin par défaut
+
   req.response.statusCode = HttpStatus.ok;
   req.response.headers.contentType = ContentType.html;
-  req.response.write(showPlayersAsHTML());
+  req.response.write(await showPlayersAsHTML(repo));
   await req.response.close();
 }

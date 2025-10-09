@@ -1,22 +1,27 @@
 import 'dart:io';
-import '../utils/player_utils.dart';
-import '../utils/json_utils.dart';
 import '../player_entry.dart';
 import '../constants.dart';
+import '../services/player_repository.dart';
+import '../utils/json_utils.dart';
 
-Future<void> handlePoll(HttpRequest req) async {
-  await loadPlayers();
+Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
   try {
     final userName = req.uri.queryParameters['userName'] ?? '';
-    final withMsg = players.firstWhere(
-      (p) => p.userName == userName && p.message != null,
-      orElse: () => PlayerEntry(userName: '', expectedName: '', startTime: 0),
-    );
+    if (userName.isEmpty) {
+      jsonResponse(
+          req.response,
+          {
+            'error': 'missing_userName',
+            'message': 'Paramètre userName manquant',
+          },
+          statusCode: HttpStatus.badRequest);
+      return;
+    }
 
-    // print(
-    //     "[$appName v$version] 📡 /poll $userName (message? ${withMsg.message != null})");
+    // Cherche un message en attente pour ce joueur
+    final target = await repo.getPlayer(userName);
 
-    if (withMsg.userName.isEmpty) {
+    if (target == null || target.message == null) {
       jsonResponse(req.response, {
         'type': 'no_message',
         'message': '',
@@ -24,16 +29,17 @@ Future<void> handlePoll(HttpRequest req) async {
       return;
     }
 
-    final msg = withMsg.message!;
-    withMsg.message = null;
-    savePlayers();
+    final msg = target.message!;
+    target.message = null;
+    await repo.upsertPlayer(target); // sauvegarder la suppression du message
 
     switch (msg['type']) {
       case 'matched':
       case 'quit':
-        if (debug)
+        if (debug) {
           print(
               "Message ${msg['type']} sent to $userName from '${msg['partner']}'");
+        }
         jsonResponse(req.response, msg);
         break;
 
@@ -43,16 +49,17 @@ Future<void> handlePoll(HttpRequest req) async {
           'message': msg['message'],
           'from': msg['from'],
         });
-        if (debug)
+        if (debug) {
           print(
               "Message ${msg['type']} sent to $userName from '${msg['partner']}'");
+        }
         break;
 
       case 'gameOver':
         jsonResponse(req.response, msg);
         final from = msg['from'];
         final to = msg['to'];
-        removePlayerGame(from, to);
+        await repo.removePlayerGame(from, to);
         break;
 
       case 'message':
@@ -70,11 +77,12 @@ Future<void> handlePoll(HttpRequest req) async {
     }
   } catch (e) {
     jsonResponse(
-        req.response,
-        {
-          'error': 'invalid_request',
-          'details': e.toString(),
-        },
-        statusCode: HttpStatus.badRequest);
+      req.response,
+      {
+        'error': 'invalid_request',
+        'details': e.toString(),
+      },
+      statusCode: HttpStatus.badRequest,
+    );
   }
 }

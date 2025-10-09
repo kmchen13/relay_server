@@ -4,8 +4,9 @@ import '../player_entry.dart';
 import '../utils/player_utils.dart';
 import '../utils/json_utils.dart';
 import '../constants.dart';
+import '../services/player_repository.dart';
 
-Future<void> handleConnect(HttpRequest req) async {
+Future<void> handleConnect(HttpRequest req, PlayerRepository repo) async {
   try {
     final body = await utf8.decoder.bind(req).join();
     final data = jsonDecode(body) as Map<String, dynamic>;
@@ -19,26 +20,31 @@ Future<void> handleConnect(HttpRequest req) async {
         ? data['startTime'] as int
         : int.tryParse(data['startTime']?.toString() ?? '0') ?? 0;
 
-    await loadPlayers();
-
     if (debug) {
       print(
           "[$appName v$version] 🔔 /connect player=$userName expected=$expectedName start=$startTime");
     }
-    var me = findOpenEntry(userName, expectedName);
+
+    // Cherche une entrée ouverte en base
+    var me = await findOpenEntry(repo, userName, expectedName);
     me ??= PlayerEntry(
         userName: userName, expectedName: expectedName, startTime: startTime);
-    if (!players.contains(me)) players.add(me);
 
-    await savePlayers();
+    await repo.upsertPlayer(me);
 
-    final match = findMatchingCounterpart(userName, expectedName);
+    // Chercher un partenaire correspondant
+    final match = await findMatchingCounterpart(repo, userName, expectedName);
+
     if (match != null) {
       me.partner = match.userName;
       me.partnerStartTime = match.startTime;
 
       match.partner = me.userName;
       match.partnerStartTime = me.startTime;
+
+      // Mise à jour des deux joueurs en BDD
+      await repo.upsertPlayer(me);
+      await repo.upsertPlayer(match);
 
       jsonResponse(req.response, {
         'status': 'matched',
@@ -47,7 +53,7 @@ Future<void> handleConnect(HttpRequest req) async {
         'partnerStartTime': match.startTime,
       });
 
-      queueMessageFor(match.userName, me.userName, {
+      await queueMessageFor(repo, match.userName, me.userName, {
         'type': 'matched',
         'partner': me.userName,
         'startTime': match.startTime,
@@ -56,7 +62,7 @@ Future<void> handleConnect(HttpRequest req) async {
 
       if (debug)
         print(
-            "[$appName v$version] ✅ Match: ${me.userName} ↔ ${match.userName} ");
+            "[$appName v$version] ✅ Match: ${me.userName} ↔ ${match.userName}");
     } else {
       jsonResponse(req.response, {'status': 'waiting'});
       if (debug)
@@ -72,5 +78,9 @@ Future<void> handleConnect(HttpRequest req) async {
           'stack': s.toString(),
         },
         statusCode: HttpStatus.badRequest);
+    if (debug) {
+      print("Error in /connect: $e");
+      print(s);
+    }
   }
 }
