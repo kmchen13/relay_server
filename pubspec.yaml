@@ -12,4 +12,4 @@ dependencies:
   collection: ^1.17.0
   postgres: ^2.6.3
   
-startCommand: dart run bin/relay_server.dart
+startCommand: dart run lib/relay_server.dart

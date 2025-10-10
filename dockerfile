@@ -10,7 +10,7 @@ COPY . .
 RUN dart pub get
 
 # Build du serveur en snapshot
-RUN dart compile exe bin/relay_server.dart -o bin/server
+RUN dart compile exe lib/relay_server.dart -o bin/server
 
 # Runtime minimal
 FROM debian:bullseye-slim
