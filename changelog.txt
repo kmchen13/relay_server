@@ -7,3 +7,4 @@
 1.5.0 Passage en BDD POSTGRES
 1.6.0 Création entrées players si poll reçu et entrée existe pas (perte de données). Passage chez Neon pour BDD.
 1.6.1 Corrections conversions JSON / POSTGRES
+1.7.0 Ajout reconnexion automatique

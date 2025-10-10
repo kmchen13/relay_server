@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'utils/json_utils.dart';
 import 'handlers/connect_handler.dart';
 import 'handlers/gamestate_handler.dart';
@@ -11,24 +12,63 @@ import 'constants.dart';
 import 'package:postgres/postgres.dart';
 import 'services/player_repository.dart';
 
-void main() async {
-  final connection = PostgreSQLConnection(
-    // 'ep-divine-breeze-ag5usc79-pooler.c-2.eu-central-1.aws.neon.tech', // host
-    'ep-divine-breeze-ag5usc79.c-2.eu-central-1.aws.neon.tech',
-    5432, // port
-    'scrabble_chen', // database
-    // username: 'neondb_owner',
-    // password: 'npg_Y8Qg0IqUFdBE',
-    username: 'kmc',
-    password: 'npg_0BgstIKJf6Lj',
-    useSSL: true,
-  );
+Future<void> main() async {
+  PostgreSQLConnection? connection;
 
-  await connection.open();
-  print('✅ Connected to Neon Postgres!');
+  // Fonction utilitaire pour créer une nouvelle connexion
+  Future<PostgreSQLConnection> createConnection({required bool isLocal}) async {
+    final host = isLocal
+        ? 'ep-divine-breeze-ag5usc79-pooler.c-2.eu-central-1.aws.neon.tech'
+        : 'ep-divine-breeze-ag5usc79.c-2.eu-central-1.aws.neon.tech';
+
+    final dbName = isLocal ? 'dev' : 'scrabble_chen';
+
+    final conn = PostgreSQLConnection(
+      host,
+      5432,
+      dbName,
+      username: 'kmc',
+      password: 'npg_0BgstIKJf6Lj',
+      useSSL: true,
+    );
+
+    await conn.open();
+    print('✅ Connected to Neon Postgres (${isLocal ? "pooler" : "direct"})');
+    return conn;
+  }
+
+  // Détermination du mode de connexion
+  try {
+    final result = await Process.run('/data/bin/is_local_server', []);
+    connection = await createConnection(isLocal: result.exitCode == 0);
+  } catch (e) {
+    print('⚠️ Erreur lors de la détection du serveur local: $e');
+    connection = await createConnection(isLocal: false);
+  }
+
   final repo = PlayerRepository(connection);
   await repo.init();
-  // repo.clearAllPlayers(); // Nettoyer la BDD au démarrage
+
+  // ✅ Boucle de surveillance pour rouvrir la connexion en cas de déconnexion
+  Timer.periodic(Duration(minutes: 1), (timer) async {
+    if (connection == null) return;
+    if (connection!.isClosed) {
+      print('🔄 Connection to Neon lost. Reconnecting...');
+      try {
+        await connection!.close();
+      } catch (_) {}
+      try {
+        final result = await Process.run('/data/bin/is_local_server', []);
+        connection = await createConnection(isLocal: result.exitCode == 0);
+        repo.connection = connection!; // 🔁 Réinjecte la connexion dans le repo
+        print('[$appName v$version] ✅ Reconnected to Neon Postgres.');
+      } catch (e) {
+        print('[$appName v$version] ❌ Failed to reconnect: $e');
+      }
+    }
+  });
+
+  // Lancer ton serveur principal
   await startServer(repo);
 }
 

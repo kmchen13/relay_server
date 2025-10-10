@@ -4,7 +4,7 @@
         {
             "label": "Préparer le serveur (version_update)",
             "type": "shell",
-            "command": "./version_update.bash",
+            "command": "bin/version_update.bash",
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",

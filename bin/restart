@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+# Restart the relay server via systemctl and show the last 50 log lines
+#
+
+sudo systemctl restart relay_server.service
+journalctl -u relay_server.service -f -n 50

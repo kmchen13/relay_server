@@ -5,7 +5,7 @@
       "name": "Debug relay_server.dart",
       "type": "dart",
       "request": "launch",
-      "program": "bin/relay_server.dart",
+      "program": "lib/relay_server.dart",
       "args": [
         "--port",
         "8080"

@@ -4,7 +4,7 @@ import '../constants.dart';
 import 'dart:convert';
 
 class PlayerRepository {
-  final PostgreSQLConnection connection;
+  PostgreSQLConnection connection;
 
   PlayerRepository(this.connection);
 

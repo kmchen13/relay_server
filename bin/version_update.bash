@@ -2,10 +2,10 @@
 set -e
 
 # Chemin vers ton fichier constants.dart
-CONSTANTS_FILE="/data/flutter/relay_server/bin/constants.dart"
+CONSTANTS_FILE="/data/flutter/relay_server/lib/constants.dart"
 
 # Récupération de la dernière version via ton script
-VERSION=$(./version_last.bash)
+VERSION=$(bin/version_last.bash)
 
 if [ -z "$VERSION" ]; then
   echo "❌ ERREUR : last_version.bash n'a retourné aucune version."

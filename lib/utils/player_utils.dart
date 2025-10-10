@@ -136,6 +136,39 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
   final results = await repo.connection.query('SELECT * FROM players');
   final buffer = StringBuffer();
 
+  buffer.writeln('''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>$appName v$version</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #555;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #222;
+    }
+    tr:nth-child(even) {
+      background-color: #111;
+    }
+  </style>
+</head>
+<body>
+''');
+
   buffer.writeln('<h1>$appName v$version</h1>');
   buffer.writeln('<table border="1" cellpadding="5" cellspacing="0">');
   buffer.writeln(
@@ -160,6 +193,7 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
   buffer.writeln('</table>');
   buffer.writeln(
       '<form method="POST" action="/admin/clear"><button type="submit">Clear Players</button></form><br/>');
+  buffer.writeln('</body></html>');
 
   return buffer.toString();
 }
