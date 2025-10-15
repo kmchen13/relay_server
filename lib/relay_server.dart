@@ -37,10 +37,10 @@ Future<void> main() async {
     return conn;
   }
 
-  // Détermination du mode de connexion
+// Détermination du mode de connexion
   try {
-    final result = await Process.run('/data/bin/is_local_server', []);
-    connection = await createConnection(isLocal: result.exitCode == 0);
+    final isLocal = Directory('/data').existsSync();
+    connection = await createConnection(isLocal: isLocal);
   } catch (e) {
     print('⚠️ Erreur lors de la détection du serveur local: $e');
     connection = await createConnection(isLocal: false);
@@ -70,6 +70,11 @@ Future<void> main() async {
 
   // Lancer ton serveur principal
   await startServer(repo);
+}
+
+bool isLocalServer() {
+  final dir = Directory('/data');
+  return dir.existsSync();
 }
 
 Future<void> startServer(repo) async {

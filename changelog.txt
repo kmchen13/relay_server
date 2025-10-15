@@ -10,3 +10,4 @@
 1.7.0 Ajout reconnexion automatique
 1.7.1 Corrections déplacement bin/ vers lib/
 1.7.2 Modification des logs
+1.7.3 Modification du test si server local ou render
