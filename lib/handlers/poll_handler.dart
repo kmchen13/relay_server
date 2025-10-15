@@ -37,7 +37,7 @@ Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
       case 'quit':
         if (debug) {
           print(
-              "Message ${msg['type']} sent to $userName from '${msg['partner']}'");
+              "[$appName v$version] Poll: ${msg['type']} sent to $userName from '${msg['partner']}'");
         }
         jsonResponse(req.response, msg);
         break;
@@ -50,7 +50,7 @@ Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
         });
         if (debug) {
           print(
-              "Message ${msg['type']} sent to $userName from '${msg['partner']}'");
+              "[$appName v$version] Poll: ${msg['type']} sent to $userName from '${msg['from']}'");
         }
         break;
 

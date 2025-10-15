@@ -16,7 +16,7 @@ Future<void> handleGameState(HttpRequest req, PlayerRepository repo) async {
       message = jsonDecode(message);
     }
     if (debug) {
-      print("[$appName v$version] 🎲 /gamestate de $from → $to \n\n $message");
+      print("[$appName v$version] 🎲 /gamestate de $from → $to");
     }
 
     await queueMessageFor(repo, to, from, {

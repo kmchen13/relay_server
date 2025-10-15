@@ -9,3 +9,4 @@
 1.6.1 Corrections conversions JSON / POSTGRES
 1.7.0 Ajout reconnexion automatique
 1.7.1 Corrections déplacement bin/ vers lib/
+1.7.2 Modification des logs
