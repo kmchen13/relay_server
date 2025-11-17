@@ -1,0 +1,6 @@
+#!/bin/bash
+#
+# Stop the relay server via systemctl and show the last 50 log lines
+#
+
+sudo systemctl stop relay_server.service

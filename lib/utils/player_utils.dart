@@ -102,8 +102,8 @@ Future<void> showPlayers(PlayerRepository repo) async {
   if (!debug) return;
 
   print('[$appName v$version] Joueurs enregistrés:');
-  print('| Usr |Expct|  Time    |Prtnr|Message|');
-  print('+-----+-----+----------+-----+-------');
+  print('| Usr |  Time    |Prtnr|Message|');
+  print('+-----+----------+-----+-------');
 
   for (final row in results) {
     final p = PlayerEntry.fromRow(row.toColumnMap());
@@ -113,11 +113,6 @@ Future<void> showPlayers(PlayerRepository repo) async {
 
     final userName =
         p.userName.length > 3 ? p.userName.substring(0, 3) : p.userName;
-    final expectedName = p.expectedName.isEmpty
-        ? ' - '
-        : p.expectedName.length > 3
-            ? p.expectedName.substring(0, 3)
-            : p.expectedName;
     final partner = p.partner.isEmpty
         ? ' — '
         : p.partner.length > 3
@@ -127,7 +122,7 @@ Future<void> showPlayers(PlayerRepository repo) async {
         ? 'no'
         : p.message!['type'].toString().padRight(9).substring(0, 7);
 
-    print('| $userName | $expectedName | $hms | $partner | $message |');
+    print('| $userName | $hms | $partner | $message |');
   }
 }
 
@@ -172,7 +167,7 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
   buffer.writeln('<h1>$appName v$version</h1>');
   buffer.writeln('<table border="1" cellpadding="5" cellspacing="0">');
   buffer.writeln(
-      '<tr><th>User</th><th>Expected</th><th>Time</th><th>Partner</th><th>Message</th></tr>');
+      '<tr><th width=5>User</th><th width=10>Time</th><th width=5>Partner</th><th>Message</th></tr>');
 
   for (final row in results) {
     final p =
@@ -187,7 +182,7 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
     final message = p.message == null ? 'no' : p.message!['type'].toString();
 
     buffer.writeln(
-        '<tr><td>$userName</td><td>$expectedName</td><td>$hms</td><td>$partner</td><td>$message</td></tr>');
+        '<tr><td>$userName</td><td>$hms</td><td>$partner</td><td>$message</td></tr>');
   }
 
   buffer.writeln('</table>');

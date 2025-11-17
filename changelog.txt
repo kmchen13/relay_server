@@ -11,3 +11,4 @@
 1.7.1 Corrections déplacement bin/ vers lib/
 1.7.2 Modification des logs
 1.7.3 Modification du test si server local ou render
+1.7.4 Reformatage admin/showplayers

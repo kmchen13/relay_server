@@ -29,8 +29,6 @@ Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
     }
 
     final msg = target.message!;
-    target.message = null;
-    await repo.upsertPlayer(target); // sauvegarder la suppression du message
 
     switch (msg['type']) {
       case 'matched':
@@ -74,6 +72,10 @@ Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
           'message': msg,
         });
     }
+
+    target.message = null;
+    await repo.upsertPlayer(
+        target); // suppression du message @todo seulement quand le message a été bien reçu
   } catch (e) {
     jsonResponse(
       req.response,

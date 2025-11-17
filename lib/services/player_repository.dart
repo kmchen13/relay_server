@@ -1,4 +1,5 @@
 import 'package:postgres/postgres.dart';
+import 'utility.dart';
 import '../player_entry.dart';
 import '../constants.dart';
 import 'dart:convert';
@@ -20,6 +21,7 @@ class PlayerRepository {
         message JSONB
       )
     ''');
+    await connection.query('DISCARD ALL;');
   }
 
   /// Insère ou met à jour un joueur
@@ -111,17 +113,23 @@ class PlayerRepository {
     String partner,
     Map<String, dynamic> msg,
   ) async {
-    await connection.query(
-      '''
+    try {
+      await connection.query(
+        '''
     UPDATE players
-    SET message = @message::jsonb
+    SET message = @message
     WHERE userName = @userName AND partner = @partner
     ''',
-      substitutionValues: {
-        'userName': userName,
-        'partner': partner,
-        'message': jsonEncode(msg),
-      },
-    );
+        substitutionValues: {
+          'userName': userName,
+          'partner': partner,
+          'message': jsonEncode(msg),
+        },
+      );
+    } catch (e) {
+      if (debug) {
+        print("${logHeader('updateMessage')} Erreur inattendue: $e");
+      }
+    }
   }
 }
