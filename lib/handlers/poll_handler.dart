@@ -28,54 +28,17 @@ Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
       return;
     }
 
+    // Envoie le message et supprime l'entrée
     final msg = target.message!;
-
-    switch (msg['type']) {
-      case 'matched':
-      case 'quit':
-        if (debug) {
-          print(
-              "[$appName v$version] Poll: ${msg['type']} sent to $userName from '${msg['partner']}'");
-        }
-        jsonResponse(req.response, msg);
-        break;
-
-      case 'gameState':
-        jsonResponse(req.response, {
-          'type': 'gameState',
-          'message': msg['message'],
-          'from': msg['from'],
-        });
-        if (debug) {
-          print(
-              "[$appName v$version] Poll: ${msg['type']} sent to $userName from '${msg['from']}'");
-        }
-        break;
-
-      case 'gameOver':
-        jsonResponse(req.response, msg);
-        final from = msg['from'];
-        final to = msg['to'];
-        await repo.removePlayerGame(from, to);
-        break;
-
-      case 'message':
-        jsonResponse(req.response, {
-          'type': 'message',
-          'message': msg,
-        });
-        break;
-
-      default:
-        jsonResponse(req.response, {
-          'type': 'type_inconnu',
-          'message': msg,
-        });
+    jsonResponse(req.response, msg);
+    if (debug) {
+      print(
+          "[$appName v$version] Poll: ${msg['type']} sent to ${target.userName} from '${target.partner}'");
     }
-
-    target.message = null;
-    await repo.upsertPlayer(
-        target); // suppression du message @todo seulement quand le message a été bien reçu
+    repo.removePlayerGame(
+      target.userName,
+      target.partner,
+    );
   } catch (e) {
     jsonResponse(
       req.response,
@@ -85,5 +48,7 @@ Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
       },
       statusCode: HttpStatus.badRequest,
     );
+    if (debug)
+      print("[$appName v$version] ❌ Exception dans handlePoll: $e.message");
   }
 }

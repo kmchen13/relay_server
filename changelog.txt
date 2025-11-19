@@ -12,3 +12,4 @@
 1.7.2 Modification des logs
 1.7.3 Modification du test si server local ou render
 1.7.4 Reformatage admin/showplayers
+1.8.0 Fonctionnement comme BAL. Suppression des messages dès qu'ils ont été lus, le serveur ne mémorise que les attentes de partenaire

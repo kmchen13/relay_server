@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:relay_server/services/utility.dart';
+import 'package:relay_server/player_entry.dart';
+
 import '../services/player_repository.dart';
 import '../utils/json_utils.dart';
 import '../constants.dart';
@@ -20,34 +23,33 @@ Future<void> handleQuit(HttpRequest req, PlayerRepository repo) async {
       print("[$appName v$version] 🔔 /quit $userName - $partner");
     }
 
-    // Chercher le joueur dans la BDD
-    final gameInCourse = await repo.getPlayer(userName);
+    //supprimer l'entrée si elle existe'
+    repo.removePlayerGame(
+      userName,
+      partner,
+    );
 
-    if (gameInCourse == null || gameInCourse.partner != partner) {
-      jsonResponse(req.response, {'status': 'player_not_found'});
-      return;
-    }
+    //créer une entrée avec le message de quit pour le partenaire
+    final message = {
+      'type': 'quit',
+      'from': userName,
+      'to': partner,
+    };
 
-    // Supprimer l’entrée du joueur qui quitte
-    await repo.removePlayerGame(userName, partner);
+    final partnerEntry = PlayerEntry(
+      userName: partner,
+      expectedName: '',
+      startTime: DateTime.now().millisecondsSinceEpoch,
+      partner: userName,
+      partnerStartTime: 0,
+      message: message,
+    );
 
-    // Prévenir le partenaire s'il existe
-    if (gameInCourse.partner.isNotEmpty) {
-      final partnerEntry = await repo.getPlayer(gameInCourse.partner);
-      if (partnerEntry != null) {
-        partnerEntry.message = {
-          'type': 'quit',
-          'from': gameInCourse.userName,
-          'to': gameInCourse.partner,
-        };
-        await repo.upsertPlayer(partnerEntry);
-      }
-    }
+    await repo.upsertPlayer(partnerEntry);
 
     jsonResponse(req.response, {'status': 'quit_success'});
     if (debug) {
-      print(
-          "[$appName v$version] 🛑 ${gameInCourse.userName} a quitté la partie");
+      print("[$appName v$version] 🛑 $userName a quitté la partie");
     }
   } catch (e, s) {
     jsonResponse(
