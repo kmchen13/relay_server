@@ -14,3 +14,4 @@
 1.7.4 Reformatage admin/showplayers
 1.8.0 Fonctionnement comme BAL. Suppression des messages dès qu'ils ont été lus, le serveur ne mémorise que les attentes de partenaire
 1.8.1 Correction version affichée
+1.8.2 Correction isLocal

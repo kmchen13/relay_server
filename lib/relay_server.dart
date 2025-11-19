@@ -14,6 +14,7 @@ import 'services/player_repository.dart';
 
 Future<void> main() async {
   PostgreSQLConnection? connection;
+  final isLocal = Directory('/data').existsSync();
 
   // Fonction utilitaire pour créer une nouvelle connexion
   Future<PostgreSQLConnection> createConnection({required bool isLocal}) async {
@@ -39,7 +40,6 @@ Future<void> main() async {
 
 // Détermination du mode de connexion
   try {
-    final isLocal = Directory('/data').existsSync();
     connection = await createConnection(isLocal: isLocal);
   } catch (e) {
     print('⚠️ Erreur lors de la détection du serveur local: $e');
@@ -58,8 +58,7 @@ Future<void> main() async {
         await connection!.close();
       } catch (_) {}
       try {
-        final result = await Process.run('/data/bin/is_local_server', []);
-        connection = await createConnection(isLocal: result.exitCode == 0);
+        connection = await createConnection(isLocal: isLocal);
         repo.connection = connection!; // 🔁 Réinjecte la connexion dans le repo
         print('[$appName v$version] ✅ Reconnected to Neon Postgres.');
       } catch (e) {
