@@ -22,3 +22,4 @@
 1.8.5 Affichage nom de la base connectée dans les logs du serveur
 1.8.6 Création de fichiers environnement
 1.8.7 Ajout de secrets files dans render
+1.8.8 Retrait des .env de .gitignore
