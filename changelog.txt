@@ -19,5 +19,5 @@
 1.8.4 
     Correction table players message TEXT
     Ajout player_utils matchPlayer(). On ne garde plus les entrées matchées.
-1.8.5
-    Affichage nom de la base connectée    
+1.8.5 Affichage nom de la base connectée dans les logs du serveur
+1.8.6 Création de fichiers environnement

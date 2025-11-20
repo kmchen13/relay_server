@@ -11,5 +11,6 @@ dependencies:
   shelf_web_socket: ^1.0.1
   collection: ^1.17.0
   postgres: ^2.6.3
+  dotenv: ^4.0.0
   
 startCommand: dart run lib/relay_server.dart
