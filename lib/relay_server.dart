@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:dotenv/dotenv.dart';
+import 'package:postgres/postgres.dart';
 import 'utils/json_utils.dart';
 import 'handlers/connect_handler.dart';
 import 'handlers/gamestate_handler.dart';
@@ -9,43 +11,47 @@ import 'handlers/disconnect_handler.dart';
 import 'handlers/quit_handler.dart';
 import 'handlers/admin_handler.dart';
 import 'constants.dart';
-import 'package:dotenv/dotenv.dart';
-
-import 'package:postgres/postgres.dart';
 import 'services/player_repository.dart';
 
 Future<void> main() async {
   late PostgreSQLConnection connection;
-  final isLocal = Directory('/data').existsSync();
 
-  /// Détermine l'environnement en fonction de l'URL du serveur ou d'une variable.
-  String _detectEnvironment() {
+  /// Détermine si l'application s'exécute en local
+  bool isLocalEnvironment() {
     final env = Platform.environment;
-    // 2️⃣ Render.com fournit RENDER_EXTERNAL_URL automatiquement
-    final serverUrl = env['RENDER_EXTERNAL_URL'] ?? '';
-    if (serverUrl.contains('-eu')) return 'prod';
-    if (serverUrl.contains('3lv4')) return 'test';
-    return 'dev';
+    return !env.containsKey('RENDER_EXTERNAL_URL');
   }
 
-  /// Charge la configuration depuis le fichier .env correspondant.
-  Map<String, String> _loadConfig(String environment) {
-    final envFile = '.env.$environment';
-    final env = DotEnv()..load([envFile]);
-    return {
-      'host': env['DB_HOST']!,
-      'name': env['DB_NAME']!,
-      'user': env['DB_USER']!,
-      'password': env['DB_PASSWORD']!,
-      'port': env['DB_PORT']!,
-    };
+  /// Charge la configuration en fonction de l'environnement
+  Map<String, String> loadConfig() {
+    if (isLocalEnvironment()) {
+      // En local, charge le fichier .env.dev
+      final env = DotEnv()..load(['.env.dev']);
+      return {
+        'host': env['DB_HOST'] ?? (throw Exception('DB_HOST non défini')),
+        'name': env['DB_NAME'] ?? (throw Exception('DB_NAME non défini')),
+        'user': env['DB_USER'] ?? (throw Exception('DB_USER non défini')),
+        'password':
+            env['DB_PASSWORD'] ?? (throw Exception('DB_PASSWORD non défini')),
+        'port': env['DB_PORT'] ?? '5432',
+      };
+    } else {
+      // En production (Render.com), utilise Platform.environment
+      final env = Platform.environment;
+      return {
+        'host': env['DB_HOST'] ?? (throw Exception('DB_HOST non défini')),
+        'name': env['DB_NAME'] ?? (throw Exception('DB_NAME non défini')),
+        'user': env['DB_USER'] ?? (throw Exception('DB_USER non défini')),
+        'password':
+            env['DB_PASSWORD'] ?? (throw Exception('DB_PASSWORD non défini')),
+        'port': env['DB_PORT'] ?? '5432',
+      };
+    }
   }
 
-  /// Fonction utilitaire pour créer la connexion DB.
+  /// Fonction utilitaire pour créer la connexion DB
   Future<PostgreSQLConnection> createConnection() async {
-    final environment = _detectEnvironment();
-    final config = _loadConfig(environment);
-
+    final config = loadConfig();
     final conn = PostgreSQLConnection(
       config['host']!,
       int.parse(config['port']!),
@@ -54,33 +60,33 @@ Future<void> main() async {
       password: config['password']!,
       useSSL: true,
     );
-
     await conn.open();
+    final environment = isLocalEnvironment() ? 'dev' : 'prod';
     print('✅ Connexion à la BDD ${config['name']} (env: $environment)');
     return conn;
   }
 
-// Détermination du mode de connexion
+  // Détermination du mode de connexion
   try {
     connection = await createConnection();
   } catch (e) {
-    print('⚠️ Erreur lors de la détection du serveur local: $e');
+    print('⚠️ Erreur lors de la connexion à la BDD: $e');
+    rethrow;
   }
 
   final repo = PlayerRepository(connection);
   await repo.init();
 
-  // ✅ Boucle de surveillance pour rouvrir la connexion en cas de déconnexion
-  Timer.periodic(Duration(minutes: 1), (timer) async {
-    if (connection == null) return;
-    if (connection!.isClosed) {
+  // Boucle de surveillance pour rouvrir la connexion en cas de déconnexion
+  Timer.periodic(const Duration(minutes: 1), (timer) async {
+    if (connection.isClosed) {
       print('🔄 Connection to Neon lost. Reconnecting...');
       try {
-        await connection!.close();
+        await connection.close();
       } catch (_) {}
       try {
         connection = await createConnection();
-        repo.connection = connection!; // 🔁 Réinjecte la connexion dans le repo
+        repo.connection = connection; // Réinjecte la connexion dans le repo
         print('[$appName v$version] ✅ Reconnected to Neon Postgres.');
       } catch (e) {
         print('[$appName v$version] ❌ Failed to reconnect: $e');
@@ -88,7 +94,7 @@ Future<void> main() async {
     }
   });
 
-  // Lancer ton serveur principal
+  // Lancer le serveur principal
   await startServer(repo);
 }
 

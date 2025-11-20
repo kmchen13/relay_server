@@ -23,3 +23,4 @@
 1.8.6 Création de fichiers environnement
 1.8.7 Ajout de secrets files dans render
 1.8.8 Retrait des .env de .gitignore
+1.8.9 Utilisation des variables d'environnement Render
