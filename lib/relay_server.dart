@@ -34,7 +34,7 @@ Future<void> main() async {
     );
 
     await conn.open();
-    print('✅ Connected to Neon Postgres (${isLocal ? "pooler" : "direct"})');
+    print('✅ Connected to Neon Postgres $dbName');
     return conn;
   }
 
