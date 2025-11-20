@@ -118,6 +118,8 @@ Future<void> startServer(repo) async {
             'details': e.toString(),
           },
           statusCode: HttpStatus.internalServerError);
+      print(
+          "[$appName v$version] ❌ Exception dans le serveur: $e\n Stack: $st");
     } finally {
       await req.response.close();
     }

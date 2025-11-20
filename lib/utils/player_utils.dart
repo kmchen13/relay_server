@@ -98,7 +98,8 @@ Future<void> queueMessageFor(
 
 /// Afficher la liste des joueurs dans la console pour le débogage
 Future<void> showPlayers(PlayerRepository repo) async {
-  final results = await repo.connection.query('SELECT * FROM players');
+  final results = await repo.connection.query(
+      'SELECT userName, expectedName, partner, startTime, partnerStartTime, message FROM players');
   if (!debug) return;
 
   print('[$appName v$version] Joueurs enregistrés:');
@@ -128,7 +129,8 @@ Future<void> showPlayers(PlayerRepository repo) async {
 
 /// Générer une représentation HTML de la liste des joueurs
 Future<String> showPlayersAsHTML(PlayerRepository repo) async {
-  final results = await repo.connection.query('SELECT * FROM players');
+  final results = await repo.connection.query(
+      'SELECT userName, expectedName, partner, startTime, partnerStartTime, message FROM players');
   final buffer = StringBuffer();
 
   buffer.writeln('''

@@ -12,14 +12,16 @@ class PlayerRepository {
   Future<void> init() async {
     // await connection.open();
     await connection.query('''
-      CREATE TABLE IF NOT EXISTS players (
-        userName TEXT PRIMARY KEY NOT NULL,
-        expectedName TEXT NOT NULL DEFAULT '',
-        partner TEXT NOT NULL DEFAULT '',
-        startTime BIGINT NOT NULL,
-        partnerStartTime BIGINT NULL,
-        message JSONB
-      )
+CREATE TABLE IF NOT EXISTS players (
+  id SERIAL PRIMARY KEY,
+  userName TEXT NOT NULL,
+  expectedName TEXT NOT NULL DEFAULT '',
+  partner TEXT NOT NULL DEFAULT '',
+  startTime BIGINT NOT NULL,
+  partnerStartTime BIGINT NULL,
+  message JSONB,
+  UNIQUE (userName, partner)
+);
     ''');
     await connection.query('DISCARD ALL;');
   }
@@ -33,7 +35,7 @@ class PlayerRepository {
     await connection.query('''
       INSERT INTO players (userName, expectedName, partner, startTime, partnerStartTime, message)
       VALUES (@userName, @expectedName, @partner, @startTime, @partnerStartTime, @message::jsonb)
-      ON CONFLICT (userName) DO UPDATE
+      ON CONFLICT (userName, partner) DO UPDATE
       SET expectedName = EXCLUDED.expectedName,
           partner = EXCLUDED.partner,
           startTime = EXCLUDED.startTime,
