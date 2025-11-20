@@ -36,15 +36,8 @@ Future<void> handleConnect(HttpRequest req, PlayerRepository repo) async {
     final match = await findMatchingCounterpart(repo, userName, expectedName);
 
     if (match != null) {
-      me.partner = match.userName;
-      me.partnerStartTime = match.startTime;
-
-      match.partner = me.userName;
-      match.partnerStartTime = me.startTime;
-
-      // Mise à jour des deux joueurs en BDD
-      await repo.upsertPlayer(me);
-      await repo.upsertPlayer(match);
+      //supprimer l'entrée userName ouverte
+      repo.removePlayerGame(userName, '');
 
       jsonResponse(req.response, {
         'status': 'matched',
@@ -52,7 +45,7 @@ Future<void> handleConnect(HttpRequest req, PlayerRepository repo) async {
         'startTime': me.startTime,
         'partnerStartTime': match.startTime,
       });
-
+      //mettre un message matched en attente pour match
       await queueMessageFor(repo, match.userName, me.userName, {
         'type': 'matched',
         'partner': me.userName,

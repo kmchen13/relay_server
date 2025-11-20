@@ -38,6 +38,37 @@ Future<PlayerEntry?> findMatchingCounterpart(
   return PlayerEntry.fromRow(results.first.toColumnMap());
 }
 
+///Matcher 2 joueurs
+/// Assigne mutuellement `partner` et `partnerStartTime`,
+/// et sauvegarde les deux entrées en base.
+///
+/// Appelée quand un match est trouvé.
+///
+/// PRECONDITIONS:
+/// - me.partner == ''
+/// - other.partner == ''
+/// - me.userName != other.userName
+Future<void> matchPlayers(
+  PlayerRepository repo,
+  PlayerEntry me,
+  PlayerEntry match,
+) async {
+  await repo.connection.query(
+    '''
+    UPDATE players
+    SET partner = @meName,
+        partnerStartTime = @meStart
+    WHERE userName = @matchName
+      AND partner = ''
+    ''',
+    substitutionValues: {
+      'meName': me.userName,
+      'meStart': me.startTime,
+      'matchName': match.userName,
+    },
+  );
+}
+
 /// Vérifie si deux joueurs sont déjà dans une même partie
 Future<PlayerEntry?> findInGame(
   PlayerRepository repo,

@@ -10,7 +10,6 @@ class PlayerRepository {
   PlayerRepository(this.connection);
 
   Future<void> init() async {
-    // await connection.open();
     await connection.query('''
 CREATE TABLE IF NOT EXISTS players (
   id SERIAL PRIMARY KEY,
@@ -19,7 +18,7 @@ CREATE TABLE IF NOT EXISTS players (
   partner TEXT NOT NULL DEFAULT '',
   startTime BIGINT NOT NULL,
   partnerStartTime BIGINT NULL,
-  message JSONB,
+  message TEXT,
   UNIQUE (userName, partner)
 );
     ''');
@@ -29,12 +28,15 @@ CREATE TABLE IF NOT EXISTS players (
   /// Insère ou met à jour un joueur
   Future<void> upsertPlayer(PlayerEntry player) async {
     final row = player.asRow();
+
+    // On encode le message si ce n'est pas déjà une String
     if (row['message'] != null && row['message'] is! String) {
       row['message'] = jsonEncode(row['message']);
     }
+
     await connection.query('''
       INSERT INTO players (userName, expectedName, partner, startTime, partnerStartTime, message)
-      VALUES (@userName, @expectedName, @partner, @startTime, @partnerStartTime, @message::jsonb)
+      VALUES (@userName, @expectedName, @partner, @startTime, @partnerStartTime, @message)
       ON CONFLICT (userName, partner) DO UPDATE
       SET expectedName = EXCLUDED.expectedName,
           partner = EXCLUDED.partner,
@@ -57,7 +59,6 @@ CREATE TABLE IF NOT EXISTS players (
     final row = result.first;
     final messageValue = row[5];
 
-    // 🔧 ici : messageValue peut être déjà Map<String, dynamic> ou une String JSON
     final message =
         (messageValue is String) ? jsonDecode(messageValue) : messageValue;
 
