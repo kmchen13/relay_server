@@ -30,7 +30,7 @@ Future<void> main() async {
 
   /// Charge la configuration depuis le fichier .env correspondant.
   Map<String, String> _loadConfig(String environment) {
-    final envFile = '.env.$environment';
+    final envFile = '/etc/secrets/.env.$environment';
     final env = DotEnv()..load([envFile]);
     return {
       'host': env['DB_HOST']!,
