@@ -158,7 +158,6 @@ Future<void> showPlayers(PlayerRepository repo) async {
   }
 }
 
-/// Générer une représentation HTML de la liste des joueurs
 Future<String> showPlayersAsHTML(PlayerRepository repo) async {
   final results = await repo.connection.query(
       'SELECT userName, expectedName, partner, startTime, partnerStartTime, message FROM players');
@@ -175,22 +174,51 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
       background-color: #000;
       color: #fff;
       font-family: Arial, sans-serif;
+
+      /* Taille de police adaptative */
+      font-size: clamp(12px, 1.8vw, 22px);
+      padding: 10px;
     }
+
+    h1 {
+      font-size: clamp(20px, 3vw, 40px);
+    }
+
     table {
       border-collapse: collapse;
       width: 100%;
       margin-top: 20px;
+      font-size: inherit; /* hérite de la taille adaptative */
     }
+
     th, td {
       border: 1px solid #555;
-      padding: 8px 12px;
+      padding: 6px 10px;
       text-align: left;
+      word-break: break-word; /* évite débordement */
     }
+
     th {
       background-color: #222;
     }
+
     tr:nth-child(even) {
       background-color: #111;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      font-size: clamp(14px, 2vw, 24px);
+      border-radius: 6px;
+      border: none;
+      background: #444;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #666;
     }
   </style>
 </head>
@@ -198,19 +226,17 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
 ''');
 
   buffer.writeln('<h1>$appName v$version</h1>');
-  buffer.writeln('<table border="1" cellpadding="5" cellspacing="0">');
+  buffer.writeln('<table>');
   buffer.writeln(
-      '<tr><th width=5>User</th><th width=10>Time</th><th width=5>Partner</th><th>Message</th></tr>');
+      '<tr><th>User</th><th>Time</th><th>Partner</th><th>Message</th></tr>');
 
   for (final row in results) {
-    final p =
-        PlayerEntry.fromPgRow(row); // ← conversion sécurisée depuis PostgreSQL
+    final p = PlayerEntry.fromPgRow(row);
     final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
     final hms =
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
 
     final userName = p.userName;
-    final expectedName = p.expectedName;
     final partner = p.partner.isEmpty ? '—' : p.partner;
     final message = p.message == null ? 'no' : p.message!['type'].toString();
 
@@ -220,7 +246,7 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
 
   buffer.writeln('</table>');
   buffer.writeln(
-      '<form method="POST" action="/admin/clear"><button type="submit">Clear Players</button></form><br/>');
+      '<form method="POST" action="/admin/clear"><button type="submit">Clear Players</button></form>');
   buffer.writeln('</body></html>');
 
   return buffer.toString();

@@ -25,3 +25,4 @@
 1.8.8 Retrait des .env de .gitignore
 1.8.9 Utilisation des variables d'environnement Render
 1.8.10 Ajout traitement erreur 503
+1.8.11 Adapatation tailles polices sur mobile
