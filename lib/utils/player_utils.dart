@@ -245,6 +245,12 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
   }
 
   buffer.writeln('</table>');
+  // Bouton rafraîchir (reload page)
+  buffer.writeln(
+      '<form method="GET" action="/admin/players" style="margin-top:10px;">'
+      '<button type="submit">Rafraîchir</button>'
+      '</form>');
+// Bouton Clear Players
   buffer.writeln(
       '<form method="POST" action="/admin/clear"><button type="submit">Clear Players</button></form>');
   buffer.writeln('</body></html>');
