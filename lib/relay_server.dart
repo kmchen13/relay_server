@@ -126,6 +126,8 @@ Future<void> startServer(repo) async {
         await handleQuit(req, repo);
       } else if (rqt.startsWith('/admin')) {
         await handleAdmin(req, repo);
+      } else if (rqt.startsWith('/acknowledgement')) {
+        await handleAdmin(req, repo);
       } else {
         req.response.statusCode = HttpStatus.notFound;
         jsonResponse(req.response, {

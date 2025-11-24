@@ -26,3 +26,4 @@
 1.8.9 Utilisation des variables d'environnement Render
 1.8.10 Ajout traitement erreur 503
 1.8.11 Adapatation tailles polices sur mobile
+1.8.12 Acknowledgement des poll

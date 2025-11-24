@@ -28,17 +28,13 @@ Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
       return;
     }
 
-    // Envoie le message et supprime l'entrée
+    // Envoie le message. L'entrée sera supprimée lors de l'acknowledgement.
     final msg = target.message!;
     jsonResponse(req.response, msg);
     if (debug) {
       print(
           "[$appName v$version] Poll: ${msg['type']} sent to ${target.userName} from '${target.partner}'");
     }
-    repo.removePlayerGame(
-      target.userName,
-      target.partner,
-    );
   } catch (e) {
     jsonResponse(
       req.response,
