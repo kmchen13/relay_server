@@ -107,10 +107,10 @@ Future<void> queueMessageFor(
 
     target = PlayerEntry(
       userName: targetUser,
-      expectedName: fromUser, // ou vide, mais utile pour cohérence
+      expectedName: '',
       partner: fromUser,
-      startTime: 0, // non utilisé, valeur neutre
-      partnerStartTime: 0,
+      startTime: DateTime.now().millisecondsSinceEpoch,
+      partnerStartTime: 0, //inutilisé
       message: safeMsg,
     );
 
@@ -245,14 +245,19 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
   }
 
   buffer.writeln('</table>');
-  // Bouton rafraîchir (reload page)
-  buffer.writeln(
-      '<form method="GET" action="/admin/players" style="margin-top:10px;">'
+
+// Bloc boutons
+  buffer.writeln('<div style="display:flex; gap:10px; margin-top:10px;">'
+      // Bouton rafraîchir
+      '<form method="GET" action="/admin/players">'
       '<button type="submit">Rafraîchir</button>'
-      '</form>');
-// Bouton Clear Players
-  buffer.writeln(
-      '<form method="POST" action="/admin/clear"><button type="submit">Clear Players</button></form>');
+      '</form>'
+      // Bouton clear
+      '<form method="POST" action="/admin/clear">'
+      '<button type="submit">Clear Players</button>'
+      '</form>'
+      '</div>');
+
   buffer.writeln('</body></html>');
 
   return buffer.toString();

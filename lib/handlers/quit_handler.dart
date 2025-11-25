@@ -24,7 +24,7 @@ Future<void> handleQuit(HttpRequest req, PlayerRepository repo) async {
     }
 
     //supprimer l'entrée si elle existe'
-    repo.removePlayerGame(
+    repo.removePlayerEntry(
       userName,
       partner,
     );

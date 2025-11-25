@@ -99,14 +99,20 @@ CREATE TABLE IF NOT EXISTS players (
   }
 
   /// Supprimer l'entrée d'une partie d'un joueur
-  Future<void> removePlayerGame(String userName, String partner) async {
-    await connection.query(
-      'DELETE FROM players WHERE userName = @userName AND partner = @partner',
-      substitutionValues: {'userName': userName, 'partner': partner},
-    );
+  Future<void> removePlayerEntry(String userName, String partner) async {
+    try {
+      await connection.query(
+        'DELETE FROM players WHERE userName = @userName AND partner = @partner',
+        substitutionValues: {'userName': userName, 'partner': partner},
+      );
 
-    if (debug) {
-      print("🗑️ Removed game entry: $userName ↔ $partner");
+      if (debug) {
+        print("🗑️ Removed player entry: $userName ↔ $partner");
+      }
+    } catch (e) {
+      if (debug) {
+        print("${logHeader('removePlayerEntry')} Erreur inattendue: $e");
+      }
     }
   }
 

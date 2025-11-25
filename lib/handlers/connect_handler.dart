@@ -37,7 +37,7 @@ Future<void> handleConnect(HttpRequest req, PlayerRepository repo) async {
 
     if (match != null) {
       //supprimer l'entrée userName ouverte
-      repo.removePlayerGame(userName, '');
+      repo.removePlayerEntry(userName, '');
 
       jsonResponse(req.response, {
         'status': 'matched',

@@ -26,4 +26,8 @@
 1.8.9 Utilisation des variables d'environnement Render
 1.8.10 Ajout traitement erreur 503
 1.8.11 Adapatation tailles polices sur mobile
-1.8.12 Acknowledgement des poll
+1.8.12 Acknowledgement des poll. Bouton Rafraichissement /admin
+1.8.13 
+    Ajout de logs
+    Affichage boutons /admin horizontal
+    Corrections relay_server et relay_net ack_handler

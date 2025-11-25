@@ -10,6 +10,7 @@ import 'handlers/poll_handler.dart';
 import 'handlers/disconnect_handler.dart';
 import 'handlers/quit_handler.dart';
 import 'handlers/admin_handler.dart';
+import 'handlers/ack_handler.dart';
 import 'constants.dart';
 import 'services/player_repository.dart';
 
@@ -127,7 +128,7 @@ Future<void> startServer(repo) async {
       } else if (rqt.startsWith('/admin')) {
         await handleAdmin(req, repo);
       } else if (rqt.startsWith('/acknowledgement')) {
-        await handleAdmin(req, repo);
+        await handleAck(req, repo);
       } else {
         req.response.statusCode = HttpStatus.notFound;
         jsonResponse(req.response, {
