@@ -31,3 +31,6 @@
     Ajout de logs
     Affichage boutons /admin horizontal
     Corrections relay_server et relay_net ack_handler
+1.9.0 
+    Corrections connect
+    Ajout matchPlayer

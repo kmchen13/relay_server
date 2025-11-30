@@ -45,13 +45,8 @@ Future<void> handleConnect(HttpRequest req, PlayerRepository repo) async {
         'startTime': me.startTime,
         'partnerStartTime': match.startTime,
       });
-      //mettre un message matched en attente pour match
-      await queueMessageFor(repo, match.userName, me.userName, {
-        'type': 'matched',
-        'partner': me.userName,
-        'startTime': match.startTime,
-        'partnerStartTime': me.startTime,
-      });
+      //mettre un message matched en attente pour match et mettre à jour son entrée partner
+      repo.matchPlayer(me, match);
 
       if (debug)
         print(

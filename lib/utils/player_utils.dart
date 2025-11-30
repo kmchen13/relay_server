@@ -118,7 +118,10 @@ Future<void> queueMessageFor(
   } else {
     // Sinon, mettre à jour le message existant
     target.message = safeMsg;
-    await repo.updateMessage(targetUser, target.partner, safeMsg);
+    await repo.updateMessage(targetUser, fromUser, safeMsg);
+    if (debug) {
+      print("🆕 Mise à jour de PlayerEntry pour $targetUser (from $fromUser)");
+    }
   }
 
   if (debug) {

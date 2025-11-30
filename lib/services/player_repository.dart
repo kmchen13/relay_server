@@ -141,4 +141,54 @@ CREATE TABLE IF NOT EXISTS players (
       }
     }
   }
+
+  /// Match deux joueurs :
+  /// - me : l'entrée qui vient d'appeler /connect
+  /// - match : l'entrée trouvée comme partenaire potentiel
+  ///
+  /// Règle :
+  ///   ✔ On ne modifie le partner du joueur distant que si partner=''
+  ///   ✔ On ajoute toujours le message "matched"
+  Future<void> matchPlayer(PlayerEntry me, PlayerEntry match) async {
+    // 1️⃣ Mise à jour conditionnelle du partner du joueur distant
+    try {
+      await connection.query(
+        '''
+        UPDATE players
+        SET partner = @meUserName,
+            partnerStartTime = @meStartTime
+        WHERE userName = @theirUserName
+          AND partner = ''
+        ''',
+        substitutionValues: {
+          'meUserName': me.userName,
+          'meStartTime': me.startTime,
+          'theirUserName': match.userName,
+        },
+      );
+    } catch (e) {
+      if (debug) {
+        print("${logHeader('matchPlayer')} Erreur UPDATE conditional: $e");
+      }
+    }
+
+    // 2️⃣ Ajouter le message "matched" dans son entrée userName-partner
+    //    (ne dépend pas du résultat du UPDATE précédent)
+    try {
+      await updateMessage(
+        match.userName,
+        me.userName,
+        {
+          'type': 'matched',
+          'partner': me.userName,
+          'startTime': match.startTime,
+          'partnerStartTime': me.startTime,
+        },
+      );
+    } catch (e) {
+      if (debug) {
+        print("${logHeader('matchPlayer')} Erreur updateMessage: $e");
+      }
+    }
+  }
 }
