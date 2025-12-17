@@ -34,3 +34,5 @@
 1.9.0 
     Corrections connect
     Ajout matchPlayer
+1.9.2 Adaptation game_over
+2.0.0 Corrections du handle_gameState si quit en attente

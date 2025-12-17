@@ -15,24 +15,6 @@ Future<void> handleGameOver(HttpRequest req, PlayerRepository repo) async {
 
     if (debug) print("[$appName v$version] 🏁 /gameover de $from → $to");
 
-    // Cherche le joueur cible dans la BDD
-    final target = await repo.getPlayer(to);
-
-    if (target == null ||
-        (target.partner != from &&
-            target.expectedName != from &&
-            target.expectedName.isNotEmpty)) {
-      jsonResponse(
-        req.response,
-        {
-          'status': 'partner_not_found',
-          'message': 'Partenaire non trouvé',
-        },
-        statusCode: HttpStatus.notFound,
-      );
-      return;
-    }
-
     // Mettre en file le message gameOver
     await queueMessageFor(repo, to, from, {
       'type': 'gameOver',
