@@ -36,3 +36,4 @@
     Ajout matchPlayer
 1.9.2 Adaptation game_over
 2.0.0 Corrections du handle_gameState si quit en attente
+2.0.1 Ajout bouton suppression entrée dans /admin

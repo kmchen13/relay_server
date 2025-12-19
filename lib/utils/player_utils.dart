@@ -177,8 +177,6 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
       background-color: #000;
       color: #fff;
       font-family: Arial, sans-serif;
-
-      /* Taille de police adaptative */
       font-size: clamp(12px, 1.8vw, 22px);
       padding: 10px;
     }
@@ -191,14 +189,14 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
       border-collapse: collapse;
       width: 100%;
       margin-top: 20px;
-      font-size: inherit; /* hérite de la taille adaptative */
+      font-size: inherit;
     }
 
     th, td {
       border: 1px solid #555;
       padding: 6px 10px;
       text-align: left;
-      word-break: break-word; /* évite débordement */
+      word-break: break-word;
     }
 
     th {
@@ -211,8 +209,8 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
 
     button {
       margin-top: 20px;
-      padding: 10px 15px;
-      font-size: clamp(14px, 2vw, 24px);
+      padding: 8px 12px;
+      font-size: clamp(12px, 1.5vw, 18px);
       border-radius: 6px;
       border: none;
       background: #444;
@@ -223,7 +221,20 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
     button:hover {
       background: #666;
     }
+
+    .delete-button {
+      background: #ff4444;
+    }
+
+    .delete-button:hover {
+      background: #ff6666;
+    }
   </style>
+  <script>
+    function confirmDelete(userName) {
+      return confirm('Voulez-vous vraiment supprimer l\\'entrée pour ' + userName + ' ?');
+    }
+  </script>
 </head>
 <body>
 ''');
@@ -231,7 +242,7 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
   buffer.writeln('<h1>$appName v$version</h1>');
   buffer.writeln('<table>');
   buffer.writeln(
-      '<tr><th>User</th><th>Time</th><th>Partner</th><th>Message</th></tr>');
+      '<tr><th>User</th><th>Time</th><th>Partner</th><th>Message</th><th>Actions</th></tr>');
 
   for (final row in results) {
     final p = PlayerEntry.fromPgRow(row);
@@ -243,23 +254,35 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
     final partner = p.partner.isEmpty ? '—' : p.partner;
     final message = p.message == null ? 'no' : p.message!['type'].toString();
 
-    buffer.writeln(
-        '<tr><td>$userName</td><td>$hms</td><td>$partner</td><td>$message</td></tr>');
+    buffer.writeln('''
+      <tr>
+        <td>$userName</td>
+        <td>$hms</td>
+        <td>$partner</td>
+        <td>$message</td>
+        <td>
+          <form method="POST" action="/admin/delete" onsubmit="return confirmDelete('$userName')">
+            <input type="hidden" name="userName" value="$userName">
+            <button type="submit" class="delete-button">Supprimer</button>
+          </form>
+        </td>
+      </tr>
+    ''');
   }
 
   buffer.writeln('</table>');
 
-// Bloc boutons
-  buffer.writeln('<div style="display:flex; gap:10px; margin-top:10px;">'
-      // Bouton rafraîchir
-      '<form method="GET" action="/admin/players">'
-      '<button type="submit">Rafraîchir</button>'
-      '</form>'
-      // Bouton clear
-      '<form method="POST" action="/admin/clear">'
-      '<button type="submit">Clear Players</button>'
-      '</form>'
-      '</div>');
+  // Bloc boutons
+  buffer.writeln('''
+    <div style="display:flex; gap:10px; margin-top:10px;">
+      <form method="GET" action="/admin/players">
+        <button type="submit">Rafraîchir</button>
+      </form>
+      <form method="POST" action="/admin/clear">
+        <button type="submit">Clear Players</button>
+      </form>
+    </div>
+  ''');
 
   buffer.writeln('</body></html>');
 
