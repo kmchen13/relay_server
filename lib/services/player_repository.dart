@@ -111,7 +111,19 @@ CREATE TABLE IF NOT EXISTS players (
       }
     } catch (e) {
       if (debug) {
-        print("${logHeader('removePlayerEntry')} Erreur inattendue: $e");
+        if (e is PostgreSQLException) {
+          // Message d'erreur PostgreSQL
+          print(
+              "${logHeader('removePlayerEntry')} ❌ Erreur PostgreSQL: ${e.message}");
+          // Code d'erreur PostgreSQL
+          print(
+              "${logHeader('removePlayerEntry')} 🔢 Code d'erreur: ${e.code}");
+          // Sévérité de l'erreur (ex: ERROR, FATAL, etc.)
+          print("${logHeader('removePlayerEntry')} ⚠️ Sévérité: ${e.severity}");
+        } else {
+          // Erreur générique
+          print("${logHeader('removePlayerEntry')} ❌ Erreur inattendue: $e");
+        }
       }
     }
   }

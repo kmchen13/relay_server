@@ -111,7 +111,11 @@ Future<void> startServer(repo) async {
 
   await for (final req in server) {
     final rqt = req.uri.path;
-
+    // if (debug) {
+    //   final queryParameters = req.uri.queryParameters;
+    //   print(
+    //       "[$appName v$version] ➡️ Requête reçue: $rqt \n Paramètres: $queryParameters");
+    // }
     try {
       if (req.method == 'POST' && rqt == '/connect') {
         await handleConnect(req, repo);

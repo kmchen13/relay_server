@@ -1,5 +1,6 @@
 import 'dart:io';
 import '../constants.dart';
+import '../utils/player_utils.dart';
 import '../services/player_repository.dart';
 import '../utils/json_utils.dart';
 
@@ -16,11 +17,13 @@ Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
           statusCode: HttpStatus.badRequest);
       return;
     }
-
+    if (debug) {
+      print("[$appName v$version] Poll reçu de '$userName'");
+    }
     // Cherche un message en attente pour ce joueur
-    final target = await repo.getPlayer(userName);
+    final incomingMessage = await getMessage(repo, userName);
 
-    if (target == null || target.message == null) {
+    if (incomingMessage == null) {
       jsonResponse(req.response, {
         'type': 'no_message',
         'message': '',
@@ -29,11 +32,10 @@ Future<void> handlePoll(HttpRequest req, PlayerRepository repo) async {
     }
 
     // Envoie le message. L'entrée sera supprimée lors de l'acknowledgement.
-    final msg = target.message!;
-    jsonResponse(req.response, msg);
+    jsonResponse(req.response, incomingMessage.message);
     if (debug) {
       print(
-          "[$appName v$version] Poll: ${msg['type']} sent to ${target.userName} from '${target.partner}'");
+          "[$appName v$version] Poll: ${incomingMessage.type} from '${incomingMessage.partner}'");
     }
   } catch (e) {
     jsonResponse(

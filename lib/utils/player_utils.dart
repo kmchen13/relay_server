@@ -130,6 +130,54 @@ Future<void> queueMessageFor(
   }
 }
 
+class IncomingMessage {
+  final String partner;
+  final String type;
+  final Map<String, dynamic> message;
+
+  IncomingMessage({
+    required this.partner,
+    required this.type,
+    required this.message,
+  });
+}
+
+/// Récupérer un message en attente pour un joueur spécifique.
+Future<IncomingMessage?> getMessage(
+    PlayerRepository repo, String userName) async {
+  final result = await repo.connection.query(
+    'SELECT partner, message '
+    'FROM players '
+    'WHERE userName = @userName AND message IS NOT NULL '
+    'LIMIT 1',
+    substitutionValues: {'userName': userName},
+  );
+
+  if (result.isEmpty) return null;
+
+  final row = result.first;
+  final partner = row[0]?.toString() ?? '';
+  final rawMessage = row[1];
+
+  if (partner.isEmpty || rawMessage == null) return null;
+
+  final Map<String, dynamic> decoded = rawMessage is String
+      ? jsonDecode(rawMessage)
+      : rawMessage as Map<String, dynamic>;
+
+  final String type = decoded['type'] ?? 'unknown';
+
+  // Convention : le vrai contenu est dans 'message'
+  final Map<String, dynamic> message =
+      decoded['message'] is Map<String, dynamic> ? decoded['message'] : decoded;
+
+  return IncomingMessage(
+    partner: partner,
+    type: type,
+    message: message,
+  );
+}
+
 /// Afficher la liste des joueurs dans la console pour le débogage
 Future<void> showPlayers(PlayerRepository repo) async {
   final results = await repo.connection.query(
@@ -251,23 +299,28 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
 
     final userName = p.userName;
-    final partner = p.partner.isEmpty ? '—' : p.partner;
+    final partner =
+        p.partner; // Conservez la valeur originale pour le formulaire
+    final displayPartner = p.partner.isEmpty
+        ? '—'
+        : p.partner; // Utilisez cette valeur pour l'affichage
     final message = p.message == null ? 'no' : p.message!['type'].toString();
 
     buffer.writeln('''
-      <tr>
-        <td>$userName</td>
-        <td>$hms</td>
-        <td>$partner</td>
-        <td>$message</td>
-        <td>
-          <form method="POST" action="/admin/delete" onsubmit="return confirmDelete('$userName')">
-            <input type="hidden" name="userName" value="$userName">
-            <button type="submit" class="delete-button">Supprimer</button>
-          </form>
-        </td>
-      </tr>
-    ''');
+    <tr>
+      <td>$userName</td>
+      <td>$hms</td>
+      <td>$displayPartner</td> <!-- Affiche le tiret si vide -->
+      <td>$message</td>
+      <td>
+        <form method="POST" action="/admin/entryDelete" onsubmit="return confirmDelete('$userName-$partner')">
+          <input type="hidden" name="userName" value="$userName">
+          <input type="hidden" name="partner" value="$partner"> <!-- Utilisez la valeur originale -->
+          <button type="submit" class="delete-button">Supprimer</button>
+        </form>
+      </td>
+    </tr>
+  ''');
   }
 
   buffer.writeln('</table>');
