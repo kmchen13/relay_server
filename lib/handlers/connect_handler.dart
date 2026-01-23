@@ -24,16 +24,24 @@ Future<void> handleConnect(HttpRequest req, PlayerRepository repo) async {
       print(
           "[$appName v$version] 🔔 /connect player=$userName expected=$expectedName start=$startTime");
     }
-
+    final String language = (data['language'] ?? 'fr').toString().toLowerCase();
+    if (!['fr', 'en', 'es'].contains(language)) {
+      jsonResponse(req.response, {'status': 'invalid_language'});
+      return;
+    }
     // Cherche une entrée ouverte en base
-    var me = await findOpenEntry(repo, userName, expectedName);
+    var me = await findOpenEntry(repo, userName, expectedName, language);
     me ??= PlayerEntry(
-        userName: userName, expectedName: expectedName, startTime: startTime);
+        userName: userName,
+        expectedName: expectedName,
+        language: language,
+        startTime: startTime);
 
     await repo.upsertPlayer(me);
 
     // Chercher un partenaire correspondant
-    final match = await findMatchingCounterpart(repo, userName, expectedName);
+    final match =
+        await findMatchingCounterpart(repo, userName, expectedName, language);
 
     if (match != null) {
       //supprimer l'entrée userName ouverte

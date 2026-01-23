@@ -11,6 +11,7 @@ import 'handlers/disconnect_handler.dart';
 import 'handlers/quit_handler.dart';
 import 'handlers/admin_handler.dart';
 import 'handlers/ack_handler.dart';
+import 'handlers/dictionary_handler.dart';
 import 'constants.dart';
 import 'services/player_repository.dart';
 
@@ -133,12 +134,9 @@ Future<void> startServer(repo) async {
         await handleAdmin(req, repo);
       } else if (rqt.startsWith('/acknowledgement')) {
         await handleAck(req, repo);
-      } else {
-        req.response.statusCode = HttpStatus.notFound;
-        jsonResponse(req.response, {
-          'error': 'page_not_found',
-          'message': 'Endpoint non trouvé',
-        });
+      } else if (rqt == '/dictionary') {
+        await handleDictionary(req);
+        return;
       }
     } catch (e, st) {
       if (debug) {

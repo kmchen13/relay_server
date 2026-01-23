@@ -38,3 +38,5 @@
 2.0.0 Corrections du handle_gameState si quit en attente
 2.0.1 Ajout bouton suppression entrée dans /admin/entryDelete
 2.0.2 Correction pollHandler, création fonction dédiée getMessage
+2.4.0 Ajout du paramètre language
+2.4.1 Correction bugs divers

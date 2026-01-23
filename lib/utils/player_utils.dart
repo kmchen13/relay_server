@@ -4,11 +4,8 @@ import '../services/player_repository.dart';
 import 'dart:convert';
 
 /// Trouver une entrée de joueur ouverte (sans partenaire)
-Future<PlayerEntry?> findOpenEntry(
-  PlayerRepository repo,
-  String userName,
-  String expectedName,
-) async {
+Future<PlayerEntry?> findOpenEntry(PlayerRepository repo, String userName,
+    String expectedName, String language) async {
   final results = await repo.connection.query(
     'SELECT * FROM players WHERE userName = @userName AND expectedName = @expectedName AND partner = \'\'',
     substitutionValues: {'userName': userName, 'expectedName': expectedName},
@@ -19,19 +16,21 @@ Future<PlayerEntry?> findOpenEntry(
 }
 
 /// Trouver un joueur correspondant pour le matching
-Future<PlayerEntry?> findMatchingCounterpart(
-  PlayerRepository repo,
-  String me,
-  String myExpected,
-) async {
+Future<PlayerEntry?> findMatchingCounterpart(PlayerRepository repo, String me,
+    String myExpected, String language) async {
   final results = await repo.connection.query(
     '''
     SELECT * FROM players 
     WHERE partner = '' AND userName != @me 
       AND (expectedName = @me OR expectedName = '') 
       AND (@myExpected = '' OR expectedName = @myExpected)
+      AND language = @language
     ''',
-    substitutionValues: {'me': me, 'myExpected': myExpected},
+    substitutionValues: {
+      'me': me,
+      'myExpected': myExpected,
+      'language': language
+    },
   );
 
   if (results.isEmpty) return null;
@@ -109,6 +108,7 @@ Future<void> queueMessageFor(
       userName: targetUser,
       expectedName: '',
       partner: fromUser,
+      language: 'fr', // valeur par défaut
       startTime: DateTime.now().millisecondsSinceEpoch,
       partnerStartTime: 0, //inutilisé
       message: safeMsg,

@@ -39,6 +39,7 @@ Future<void> handleQuit(HttpRequest req, PlayerRepository repo) async {
     final partnerEntry = PlayerEntry(
       userName: partner,
       expectedName: '',
+      language: 'fr',
       startTime: DateTime.now().millisecondsSinceEpoch,
       partner: userName,
       partnerStartTime: 0,

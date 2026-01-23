@@ -4,6 +4,7 @@ class PlayerEntry {
   String userName; // le joueur local
   String expectedName; // partenaire attendu ("" = aléatoire)
   String partner; // rempli après match
+  String language; // langue du joueur
   int startTime; // startTime local (ms epoch)
   int? partnerStartTime; // startTime du partenaire après match
   Map<String, dynamic>? message; // message en attente
@@ -12,6 +13,7 @@ class PlayerEntry {
     required this.userName,
     required this.expectedName,
     required this.startTime,
+    required this.language,
     this.partner = '',
     this.partnerStartTime,
     this.message,
@@ -21,6 +23,7 @@ class PlayerEntry {
   Map<String, dynamic> asRow() => {
         'userName': userName,
         'expectedName': expectedName,
+        'language': language,
         'partner': partner,
         'startTime': startTime,
         'partnerStartTime': partnerStartTime,
@@ -32,6 +35,7 @@ class PlayerEntry {
     return PlayerEntry(
       userName: row['username']?.toString() ?? '',
       expectedName: row['expectedname']?.toString() ?? '',
+      language: row['language']?.toString() ?? '',
       startTime: row['starttime'] is int
           ? row['starttime'] as int
           : int.tryParse(row['starttime']?.toString() ?? '0') ?? 0,
@@ -50,7 +54,7 @@ class PlayerEntry {
     return PlayerEntry(
       userName: row[0]?.toString() ?? '',
       expectedName: row[1]?.toString() ?? '',
-      partner: row[2]?.toString() ?? '',
+      language: row[2]?.toString() ?? '',
       startTime: row[3] is int
           ? row[3] as int
           : int.tryParse(row[3]?.toString() ?? '0') ?? 0,

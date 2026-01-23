@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS players (
   userName TEXT NOT NULL,
   expectedName TEXT NOT NULL DEFAULT '',
   partner TEXT NOT NULL DEFAULT '',
+  language TEXT NOT NULL DEFAULT 'fr',
   startTime BIGINT NOT NULL,
   partnerStartTime BIGINT NULL,
   message TEXT,
@@ -35,11 +36,12 @@ CREATE TABLE IF NOT EXISTS players (
     }
 
     await connection.query('''
-      INSERT INTO players (userName, expectedName, partner, startTime, partnerStartTime, message)
-      VALUES (@userName, @expectedName, @partner, @startTime, @partnerStartTime, @message)
+      INSERT INTO players (userName, expectedName, partner, language, startTime, partnerStartTime, message)
+      VALUES (@userName, @expectedName, @partner, @language, @startTime, @partnerStartTime, @message)
       ON CONFLICT (userName, partner) DO UPDATE
       SET expectedName = EXCLUDED.expectedName,
           partner = EXCLUDED.partner,
+          language = EXCLUDED.language,
           startTime = EXCLUDED.startTime,
           partnerStartTime = EXCLUDED.partnerStartTime,
           message = EXCLUDED.message
@@ -49,7 +51,7 @@ CREATE TABLE IF NOT EXISTS players (
   /// Récupérer un joueur
   Future<PlayerEntry?> getPlayer(String userName) async {
     final result = await connection.query(
-      'SELECT userName, expectedName, partner, startTime, partnerStartTime, message '
+      'SELECT userName, expectedName, partner, language, startTime, partnerStartTime, message '
       'FROM players WHERE userName = @userName',
       substitutionValues: {'userName': userName},
     );
@@ -66,6 +68,7 @@ CREATE TABLE IF NOT EXISTS players (
       userName: row[0]?.toString() ?? '',
       expectedName: row[1]?.toString() ?? '',
       partner: row[2]?.toString() ?? '',
+      language: row[2]?.toString() ?? 'fr',
       startTime: row[3] is int ? row[3] : int.tryParse(row[3].toString()) ?? 0,
       partnerStartTime: row[4] != null ? int.tryParse(row[4].toString()) : null,
       message: message is Map<String, dynamic> ? message : null,
@@ -75,7 +78,7 @@ CREATE TABLE IF NOT EXISTS players (
   /// Récupérer tous les joueurs
   Future<List<PlayerEntry>> getAllPlayers() async {
     final result = await connection.query(
-      'SELECT userName, expectedName, partner, startTime, partnerStartTime, message FROM players',
+      'SELECT userName, expectedName, partner, language, startTime, partnerStartTime, message FROM players',
     );
 
     return result.map((row) {
@@ -84,6 +87,7 @@ CREATE TABLE IF NOT EXISTS players (
         userName: row[0] ?? '',
         expectedName: row[1] ?? '',
         partner: row[2] ?? '',
+        language: row[2] ?? 'fr',
         startTime: row[3] ?? 0,
         partnerStartTime: row[4],
         message: messageJson != null
