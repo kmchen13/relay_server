@@ -1,0 +1,1 @@
+- Agrandir la police de Admin, enlever la colonne date

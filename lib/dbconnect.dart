@@ -18,6 +18,7 @@ Future<PostgreSQLConnection> openDb() async {
     useSSL: true,
   );
 
+  print('🔗 DATABASE_URL = ${dbUrl?.replaceAll(RegExp(r':[^@]+@'), ':****@')}');
   await conn.open();
   return conn;
 }

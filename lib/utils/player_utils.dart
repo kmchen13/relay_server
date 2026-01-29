@@ -210,8 +210,7 @@ Future<void> showPlayers(PlayerRepository repo) async {
 }
 
 Future<String> showPlayersAsHTML(PlayerRepository repo) async {
-  final results = await repo.connection.query(
-      'SELECT userName, expectedName, partner, startTime, partnerStartTime, message FROM players');
+  final results = await repo.connection.query('SELECT * FROM players');
   final buffer = StringBuffer();
 
   buffer.writeln('''
@@ -290,7 +289,7 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
   buffer.writeln('<h1>$appName v$version</h1>');
   buffer.writeln('<table>');
   buffer.writeln(
-      '<tr><th>User</th><th>Time</th><th>Partner</th><th>Message</th><th>Actions</th></tr>');
+      '<tr><th width="60pt">User</th><th width="60pt">Prtnr</th><th>Message</th><th width="30pt">Actions</th></tr>');
 
   for (final row in results) {
     final p = PlayerEntry.fromPgRow(row);
@@ -308,15 +307,14 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
 
     buffer.writeln('''
     <tr>
-      <td>$userName</td>
-      <td>$hms</td>
-      <td>$displayPartner</td> <!-- Affiche le tiret si vide -->
+      <td><center>$userName</center></td>
+      <td><center>$displayPartner</center></td> <!-- Affiche le tiret si vide -->
       <td>$message</td>
       <td>
         <form method="POST" action="/admin/entryDelete" onsubmit="return confirmDelete('$userName-$partner')">
           <input type="hidden" name="userName" value="$userName">
           <input type="hidden" name="partner" value="$partner"> <!-- Utilisez la valeur originale -->
-          <button type="submit" class="delete-button">Supprimer</button>
+          <button type="submit" class="delete-button">x</button>
         </form>
       </td>
     </tr>

@@ -40,3 +40,5 @@
 2.0.2 Correction pollHandler, création fonction dédiée getMessage
 2.4.0 Ajout du paramètre language
 2.4.1 Correction bugs divers
+2.4.2 Ajustement affichage showPlayersHtml
+2.4.3 Correction bug PlayerEntry.fromPgRow

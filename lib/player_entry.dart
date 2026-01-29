@@ -52,17 +52,18 @@ class PlayerEntry {
   /// Conversion PostgreSQL row (List) → PlayerEntry
   factory PlayerEntry.fromPgRow(List row) {
     return PlayerEntry(
-      userName: row[0]?.toString() ?? '',
-      expectedName: row[1]?.toString() ?? '',
-      language: row[2]?.toString() ?? '',
-      startTime: row[3] is int
-          ? row[3] as int
-          : int.tryParse(row[3]?.toString() ?? '0') ?? 0,
-      partnerStartTime: row[4] != null ? int.tryParse(row[4].toString()) : null,
-      message: row[5] is Map<String, dynamic>
-          ? row[5] as Map<String, dynamic>
-          : row[5] != null
-              ? jsonDecode(row[5].toString()) as Map<String, dynamic>
+      userName: row[1]?.toString() ?? '',
+      expectedName: row[2]?.toString() ?? '',
+      partner: row[3]?.toString() ?? '',
+      language: row[4]?.toString() ?? '',
+      startTime: row[5] is int
+          ? row[5] as int
+          : int.tryParse(row[4]?.toString() ?? '0') ?? 0,
+      partnerStartTime: row[6] != null ? int.tryParse(row[6].toString()) : null,
+      message: row[7] is Map<String, dynamic>
+          ? row[7] as Map<String, dynamic>
+          : row[7] != null
+              ? jsonDecode(row[7].toString()) as Map<String, dynamic>
               : null,
     );
   }
