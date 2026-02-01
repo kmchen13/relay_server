@@ -218,6 +218,8 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>$appName v$version</title>
   <style>
     body {
@@ -257,7 +259,7 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
     button {
       margin-top: 20px;
       padding: 8px 12px;
-      font-size: clamp(12px, 1.5vw, 18px);
+      font-size: clamp(14px, 4vw, 20px);
       border-radius: 6px;
       border: none;
       background: #444;
@@ -276,6 +278,34 @@ Future<String> showPlayersAsHTML(PlayerRepository repo) async {
     .delete-button:hover {
       background: #ff6666;
     }
+  @media (max-width: 600px) {
+  body {
+    font-size: 16px;
+    padding: 6px;
+  }
+
+  h1 {
+    font-size: 22px;
+    text-align: center;
+  }
+
+  table {
+    font-size: 14px;  
+    display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  }
+
+  th, td {
+    padding: 8px 6px;
+  }
+
+  button {
+    font-size: 16px;
+    padding: 10px 14px;
+  }
+}
+  
   </style>
   <script>
     function confirmDelete(userName) {
