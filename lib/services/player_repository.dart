@@ -75,26 +75,16 @@ CREATE TABLE IF NOT EXISTS players (
     );
   }
 
-  /// Récupérer tous les joueurs
-  Future<List<PlayerEntry>> getAllPlayers() async {
+  /// Récupérer tous les joueurs libres
+  Future<List<String>> getFreePlayers(String language) async {
     final result = await connection.query(
-      'SELECT userName, expectedName, partner, language, startTime, partnerStartTime, message FROM players',
+      "SELECT userName FROM players WHERE partner = '' AND language = @language",
+      substitutionValues: {
+        'language': language,
+      },
     );
 
-    return result.map((row) {
-      final messageJson = row[5];
-      return PlayerEntry(
-        userName: row[0] ?? '',
-        expectedName: row[1] ?? '',
-        partner: row[2] ?? '',
-        language: row[2] ?? 'fr',
-        startTime: row[3] ?? 0,
-        partnerStartTime: row[4],
-        message: messageJson != null
-            ? jsonDecode(messageJson.toString()) as Map<String, dynamic>
-            : null,
-      );
-    }).toList();
+    return result.map((row) => row[0] as String).toList();
   }
 
   /// Supprime tous les joueurs

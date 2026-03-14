@@ -43,3 +43,4 @@
 2.4.2 Ajustement affichage showPlayersHtml
 2.4.3 Correction bug PlayerEntry.fromPgRow
 2.4.4 Ajustementaffichage showPlauersHtml pour mobiles
+2.8.0 Ajout /getFreePlayers

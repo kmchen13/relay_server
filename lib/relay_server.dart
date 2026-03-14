@@ -12,6 +12,7 @@ import 'handlers/quit_handler.dart';
 import 'handlers/admin_handler.dart';
 import 'handlers/ack_handler.dart';
 import 'handlers/dictionary_handler.dart';
+import 'handlers/getFreePlayers_handler.dart';
 import 'constants.dart';
 import 'services/player_repository.dart';
 
@@ -136,6 +137,8 @@ Future<void> startServer(repo) async {
         await handleAck(req, repo);
       } else if (rqt == '/dictionary') {
         await handleDictionary(req);
+      } else if (rqt == '/getFreePlayers') {
+        await handleGetFreePlayers(repo);
         return;
       }
     } catch (e, st) {
