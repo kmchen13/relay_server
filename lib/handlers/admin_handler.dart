@@ -5,7 +5,7 @@ import '../constants.dart';
 import '../utils/json_utils.dart';
 import 'dart:convert';
 
-Future<void> handleAdmin(HttpRequest req, PlayerRepository repo) async {
+Future<void> handleAdmin(HttpRequest req, MessageRepository repo) async {
   switch (req.uri.path) {
     case '/admin/clear' when req.method == 'POST':
       // Supprimer tous les joueurs dans la BDD
@@ -33,7 +33,7 @@ Future<void> handleAdmin(HttpRequest req, PlayerRepository repo) async {
             },
             statusCode: HttpStatus.badRequest);
       }
-      await repo.removePlayerEntry(userName, partner);
+      await repo.deleteMessage(userName, partner);
       print(
           "[$appName v$version] 🔔 /entryDelete: Entry '$userName-$partner' deleted");
   }

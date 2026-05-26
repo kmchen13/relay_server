@@ -12,7 +12,6 @@ import 'handlers/quit_handler.dart';
 import 'handlers/admin_handler.dart';
 import 'handlers/ack_handler.dart';
 import 'handlers/dictionary_handler.dart';
-import 'handlers/getFreePlayers_handler.dart';
 import 'constants.dart';
 import 'services/player_repository.dart';
 
@@ -29,7 +28,8 @@ Future<void> main() async {
   Map<String, String> loadConfig() {
     if (isLocalEnvironment()) {
       // En local, charge le fichier .env.dev
-      final env = DotEnv()..load(['.env.dev']);
+      final env = DotEnv()..load(['.env.devlocal']);
+//      final env = DotEnv()..load(['.env.dev']);
       return {
         'host': env['DB_HOST'] ?? (throw Exception('DB_HOST non défini')),
         'name': env['DB_NAME'] ?? (throw Exception('DB_NAME non défini')),
@@ -77,7 +77,7 @@ Future<void> main() async {
     rethrow;
   }
 
-  final repo = PlayerRepository(connection);
+  final repo = MessageRepository(connection);
   await repo.init();
 
   // Boucle de surveillance pour rouvrir la connexion en cas de déconnexion
@@ -99,6 +99,16 @@ Future<void> main() async {
 
   // Lancer le serveur principal
   await startServer(repo);
+
+  /// Nettoyage des parties expirées + WARNING
+  Timer.periodic(const Duration(hours: 1), (timer) async {
+    try {
+      await repo.cleanupOldGames();
+      print("[$appName v$version] 🧹 Cleanup exécuté");
+    } catch (e) {
+      print("[$appName v$version] ❌ Cleanup error: $e");
+    }
+  });
 }
 
 bool isLocalServer() {
@@ -137,9 +147,6 @@ Future<void> startServer(repo) async {
         await handleAck(req, repo);
       } else if (rqt == '/dictionary') {
         await handleDictionary(req);
-      } else if (rqt == '/getFreePlayers') {
-        await handleGetFreePlayers(repo);
-        return;
       }
     } catch (e, st) {
       if (debug) {

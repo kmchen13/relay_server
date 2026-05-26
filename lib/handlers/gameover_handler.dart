@@ -5,7 +5,7 @@ import '../services/player_repository.dart';
 import '../utils/json_utils.dart';
 import '../utils/player_utils.dart';
 
-Future<void> handleGameOver(HttpRequest req, PlayerRepository repo) async {
+Future<void> handleGameOver(HttpRequest req, MessageRepository repo) async {
   try {
     final body = await utf8.decoder.bind(req).join();
     final data = jsonDecode(body) as Map<String, dynamic>;

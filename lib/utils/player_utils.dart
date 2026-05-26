@@ -4,7 +4,7 @@ import '../services/player_repository.dart';
 import 'dart:convert';
 
 /// Trouver une entrée de joueur ouverte (sans partenaire)
-Future<PlayerEntry?> findOpenEntry(PlayerRepository repo, String userName,
+Future<PlayerEntry?> findOpenEntry(MessageRepository repo, String userName,
     String expectedName, String language) async {
   final results = await repo.connection.query(
     'SELECT * FROM players WHERE userName = @userName AND expectedName = @expectedName AND partner = \'\'',
@@ -16,15 +16,22 @@ Future<PlayerEntry?> findOpenEntry(PlayerRepository repo, String userName,
 }
 
 /// Trouver un joueur correspondant pour le matching
-Future<PlayerEntry?> findMatchingCounterpart(PlayerRepository repo, String me,
+Future<PlayerEntry?> findMatchingCounterpart(MessageRepository repo, String me,
     String myExpected, String language) async {
   final results = await repo.connection.query(
     '''
-    SELECT * FROM players 
-    WHERE partner = '' AND userName != @me 
-      AND (expectedName = @me OR expectedName = '') 
-      AND (@myExpected = '' OR expectedName = @myExpected)
-      AND language = @language
+SELECT * FROM players 
+WHERE partner = ''
+  AND userName != @me
+  AND language = @language
+  AND (
+        @myExpected = '' 
+        OR userName = @myExpected
+      )
+  AND (
+        expectedName = '' 
+        OR expectedName = @me
+      )
     ''',
     substitutionValues: {
       'me': me,
@@ -48,7 +55,7 @@ Future<PlayerEntry?> findMatchingCounterpart(PlayerRepository repo, String me,
 /// - other.partner == ''
 /// - me.userName != other.userName
 Future<void> matchPlayers(
-  PlayerRepository repo,
+  MessageRepository repo,
   PlayerEntry me,
   PlayerEntry match,
 ) async {
@@ -70,7 +77,7 @@ Future<void> matchPlayers(
 
 /// Vérifie si deux joueurs sont déjà dans une même partie
 Future<PlayerEntry?> findInGame(
-  PlayerRepository repo,
+  MessageRepository repo,
   String userName,
   String expectedName,
 ) async {
@@ -86,7 +93,7 @@ Future<PlayerEntry?> findInGame(
 /// Mettre en file un message pour un joueur spécifique.
 /// Si aucune entrée (from → to) n'existe encore, elle est créée.
 Future<void> queueMessageFor(
-  PlayerRepository repo,
+  MessageRepository repo,
   String targetUser,
   String fromUser,
   Map<String, dynamic> msg,
@@ -144,7 +151,7 @@ class IncomingMessage {
 
 /// Récupérer un message en attente pour un joueur spécifique.
 Future<IncomingMessage?> getMessage(
-    PlayerRepository repo, String userName) async {
+    MessageRepository repo, String userName) async {
   final result = await repo.connection.query(
     'SELECT partner, message '
     'FROM players '
@@ -179,7 +186,7 @@ Future<IncomingMessage?> getMessage(
 }
 
 /// Afficher la liste des joueurs dans la console pour le débogage
-Future<void> showPlayers(PlayerRepository repo) async {
+Future<void> showPlayers(MessageRepository repo) async {
   final results = await repo.connection.query(
       'SELECT userName, expectedName, partner, startTime, partnerStartTime, message FROM players');
   if (!debug) return;
@@ -209,7 +216,7 @@ Future<void> showPlayers(PlayerRepository repo) async {
   }
 }
 
-Future<String> showPlayersAsHTML(PlayerRepository repo) async {
+Future<String> showPlayersAsHTML(MessageRepository repo) async {
   final results = await repo.connection.query('SELECT * FROM players');
   final buffer = StringBuffer();
 

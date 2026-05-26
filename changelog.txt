@@ -44,3 +44,8 @@
 2.4.3 Correction bug PlayerEntry.fromPgRow
 2.4.4 Ajustementaffichage showPlauersHtml pour mobiles
 2.8.0 Ajout /getFreePlayers
+2.9.0 Inclusion /getFreePlayers dans /poll
+3.0.0 Renforcement couche réseau en mode long polling
+    Revue player_repository->messageRepository
+    Revue des handlers
+    

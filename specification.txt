@@ -1,0 +1,66 @@
+REFONTE relay_server
+
+TABLE DES MESSAGES
+relay_server maintient une table messages ainsi structurée:
+CREATE TABLE messages (
+    user TEXT,
+    partner TEXT,
+    date BIGINT,
+    type TEXT,
+    message TEXT,
+    PRIMARY KEY (user, partner, date),
+    INDEX idx_messages_date ON messages(date)
+);
+- user ne peut être null
+- partner peut être null
+- date est mis à jour à chaque insert/update 
+- type peut prendre les valeurs suivantes: CONNECT | GAMESTATE | GAMEOVER | GAMEQUIT | CHAT
+
+
+PROTOCOLE DES REQUËTES SERVEUR RELAI:
+Les requêtes sont appelées par POST.
+
+/CONNECT(user, partner): Il y a MATCH si partner != '' et une entrée (partner, user, *, CONNECT, *) existe ou si partner = '' et une entrée CONNECT(*, '', *, *, *)
+Si user matche le serveur répond immédiatement "MATCHED" à la requête /CONNECT(user) et un message (partner, user, date, MATCHED, '') est placé dans les messages.
+
+/DISCONNECT(user): Les messages (user, *, *, CONNECT, *) sont supprimés.
+
+/GAMESTATE(user, partner, GameState): User envoit un coup à partner. Une entrée (partner, user, date, GAMESTATE, GameState) est créée
+
+/GAMEOVER(user, partner, GameState): User envoit son dernier coup à partner. (partner, user, date, GAMEOVER, GameState) est placé dans messages
+
+/GAMEQUIT(user, partner): User quitte la partie. Les messages (user,partner, *, GAMESTATE|GAMEOVER) sont supprimés, un message (partner, user, date, GAMEQUIT, '') est placé dans les messages
+
+/CHAT(user, partner, messsage): un message (partner, user, date, CHAT? 'message' est placé dans les messages
+
+/POLL(user): On travaille ne mode long polling. Le serveur renvoit le message le plus ancien (user, *)
+/ACK(user, partner, date, type): les messages (user, partner, *, type, *) sont supprimés.
+
+/WARNING(user, partner, message): 2 messages (user, partner, date, WARNING, messageTTL) et (partner, user, date, WARNING, messageTTL). messageTTL = "Attention la partie avec $(partner|user) sera supprimée dans WARNINGLIFETIME si elle n'est pas reprise"
+
+/ADMIN(command, user, partner): Affiche la liste des (*,*,*,CONNECT,*) par défaut avec un bouton DELETE sur chaque ligne et un bouton CLEAR en pied de page
+command peut avoir les valeurs suivantes:
+- DELETE(user,partner) La ligne (user, partner, date) est supprimée
+- CLEAR() la table messages est vidée
+
+MESSAGES LIFE TIME
+Tous les messages enregistrés par le serveur ont une durée de vie maximale MESSAGETTL. 
+MESSAGELIFETIME = 1 semaine 
+WARNINGLIFETIME = 1 jour 
+Si messages.date > MESSAGELIFETIME envoit avertissement aux 2 joueurs 
+Si messages.date > MESSAGELIFETIME + WARNINGLIFETIME suppression du message
+
+ARCHITECTURE:
+relay_server.dart
+    - parse POST
+    - route vers handler
+    - retourne HTTP
+
+messages_repository.dart
+    - connect()
+    - findMatch()
+    - insertMessage()
+    - getMessages(user)
+    - ackMessage()
+    - deleteExpired()
+    

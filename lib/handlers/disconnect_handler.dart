@@ -1,22 +1,17 @@
 import 'dart:io';
+import 'dart:convert';
 import '../services/player_repository.dart';
 
-Future<void> handleDisconnect(HttpRequest req, PlayerRepository repo) async {
-  final user = req.uri.queryParameters['user'];
+Future<void> handleQuit(HttpRequest req, MessageRepository repo) async {
+  final body = await utf8.decoder.bind(req).join();
+  final data = jsonDecode(body);
 
-  if (user == null || user.isEmpty) {
-    req.response
-      ..statusCode = HttpStatus.badRequest
-      ..write('missing user');
-    await req.response.close();
-    return;
-  }
+  final user = data['userName'];
+  final partner = data['partner'];
+  final type = data['type']; // QUITAPP ou TIMEOUT
 
-  repo.removePlayerEntry(user, '');
+  repo.deleteMessage(user, '');
+  await repo.sendMessage(partner, user, type, '');
 
-  req.response
-    ..statusCode = HttpStatus.ok
-    ..write('ok');
-
-  await req.response.close();
+  jsonResponse(req.response, {'status': 'ok'});
 }

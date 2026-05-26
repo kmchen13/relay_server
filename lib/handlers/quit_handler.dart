@@ -7,7 +7,7 @@ import '../services/player_repository.dart';
 import '../utils/json_utils.dart';
 import '../constants.dart';
 
-Future<void> handleQuit(HttpRequest req, PlayerRepository repo) async {
+Future<void> handleQuit(HttpRequest req, MessageRepository repo) async {
   try {
     final body = await utf8.decoder.bind(req).join();
     final data = jsonDecode(body) as Map<String, dynamic>;
@@ -24,7 +24,7 @@ Future<void> handleQuit(HttpRequest req, PlayerRepository repo) async {
     }
 
     //supprimer l'entrée si elle existe'
-    repo.removePlayerEntry(
+    repo.deleteMessage(
       userName,
       partner,
     );

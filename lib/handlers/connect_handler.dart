@@ -6,7 +6,7 @@ import '../utils/json_utils.dart';
 import '../constants.dart';
 import '../services/player_repository.dart';
 
-Future<void> handleConnect(HttpRequest req, PlayerRepository repo) async {
+Future<void> handleConnect(HttpRequest req, MessageRepository repo) async {
   try {
     final body = await utf8.decoder.bind(req).join();
     final data = jsonDecode(body) as Map<String, dynamic>;
@@ -45,7 +45,7 @@ Future<void> handleConnect(HttpRequest req, PlayerRepository repo) async {
 
     if (match != null) {
       //supprimer l'entrée userName ouverte
-      repo.removePlayerEntry(userName, '');
+      repo.deleteMessage(userName, '');
 
       jsonResponse(req.response, {
         'status': 'matched',

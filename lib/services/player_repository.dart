@@ -1,200 +1,175 @@
 import 'package:postgres/postgres.dart';
-import 'utility.dart';
-import '../player_entry.dart';
 import '../constants.dart';
-import 'dart:convert';
 
-class PlayerRepository {
-  PostgreSQLConnection connection;
+class MessageRepository {
+  final PostgreSQLConnection connection;
 
-  PlayerRepository(this.connection);
+  MessageRepository(this.connection);
 
   Future<void> init() async {
     await connection.query('''
-CREATE TABLE IF NOT EXISTS players (
-  id SERIAL PRIMARY KEY,
-  userName TEXT NOT NULL,
-  expectedName TEXT NOT NULL DEFAULT '',
-  partner TEXT NOT NULL DEFAULT '',
-  language TEXT NOT NULL DEFAULT 'fr',
-  startTime BIGINT NOT NULL,
-  partnerStartTime BIGINT NULL,
-  message TEXT,
-  UNIQUE (userName, partner)
+CREATE TABLE messages (
+    language TEXT,
+    userName TEXT,
+    expectedName TEXT,
+    partner TEXT,
+    date BIGINT,
+    type TEXT,
+    message TEXT,
+    PRIMARY KEY (userName, partner),
+    INDEX idx_messages_date ON messages(date)
 );
     ''');
     await connection.query('DISCARD ALL;');
   }
 
-  /// Insère ou met à jour un joueur
-  Future<void> upsertPlayer(PlayerEntry player) async {
-    final row = player.asRow();
-
-    // On encode le message si ce n'est pas déjà une String
-    if (row['message'] != null && row['message'] is! String) {
-      row['message'] = jsonEncode(row['message']);
-    }
+  Future<void> insertOrReplaceMessage({
+    required String language,
+    required String userName,
+    required String expectedName,
+    required String partner,
+    required String type,
+    required String message,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
 
     await connection.query('''
-      INSERT INTO players (userName, expectedName, partner, language, startTime, partnerStartTime, message)
-      VALUES (@userName, @expectedName, @partner, @language, @startTime, @partnerStartTime, @message)
-      ON CONFLICT (userName, partner) DO UPDATE
-      SET expectedName = EXCLUDED.expectedName,
-          partner = EXCLUDED.partner,
-          language = EXCLUDED.language,
-          startTime = EXCLUDED.startTime,
-          partnerStartTime = EXCLUDED.partnerStartTime,
-          message = EXCLUDED.message
-    ''', substitutionValues: row);
+      INSERT INTO messages(language, userName, expectedName, partner, date, type, message)
+      VALUES (@language, @userName, @expectedName, @partner, @date, @type, @message)
+      ON CONFLICT (userName, partner)
+      DO UPDATE SET
+        date = @date,
+        type = @type,
+        message = @message
+    ''', substitutionValues: {
+      'language': language,
+      'userName': userName,
+      'expectedName': expectedName,
+      'partner': partner,
+      'date': now,
+      'type': type,
+      'message': message,
+    });
   }
 
-  /// Récupérer un joueur
-  Future<PlayerEntry?> getPlayer(String userName) async {
-    final result = await connection.query(
-      'SELECT userName, expectedName, partner, language, startTime, partnerStartTime, message '
-      'FROM players WHERE userName = @userName',
-      substitutionValues: {'userName': userName},
-    );
+  Future<Map<String, dynamic>?> getMessage(String userName) async {
+    final result = await connection.query('''
+      SELECT language, userName, expectedName, partner, date, type, message
+      FROM messages
+      WHERE userName = @userName
+      LIMIT 1
+    ''', substitutionValues: {'userName': userName});
 
     if (result.isEmpty) return null;
 
     final row = result.first;
-    final messageValue = row[5];
-
-    final message =
-        (messageValue is String) ? jsonDecode(messageValue) : messageValue;
-
-    return PlayerEntry(
-      userName: row[0]?.toString() ?? '',
-      expectedName: row[1]?.toString() ?? '',
-      partner: row[2]?.toString() ?? '',
-      language: row[2]?.toString() ?? 'fr',
-      startTime: row[3] is int ? row[3] : int.tryParse(row[3].toString()) ?? 0,
-      partnerStartTime: row[4] != null ? int.tryParse(row[4].toString()) : null,
-      message: message is Map<String, dynamic> ? message : null,
-    );
+    return {
+      'language': row[0],
+      'userName': row[1],
+      'expectedName': row[2],
+      'partner': row[3],
+      'date': row[4],
+      'type': row[5],
+      'message': row[6],
+    };
   }
 
-  /// Récupérer tous les joueurs libres
+  Future<void> deleteMessage(String userName, String partner) async {
+    await connection.query('''
+      DELETE FROM messages
+      WHERE userName = @userName AND partner = @partner
+    ''', substitutionValues: {
+      'userName': userName,
+      'partner': partner,
+    });
+  }
+
   Future<List<String>> getFreePlayers(String language) async {
-    final result = await connection.query(
-      "SELECT userName FROM players WHERE partner = '' AND language = @language",
-      substitutionValues: {
-        'language': language,
-      },
-    );
+    final result = await connection.query('''
+      SELECT userName
+      FROM messages
+      WHERE type = 'HELLO'
+      AND language = @language
+    ''', substitutionValues: {'language': language});
 
-    return result.map((row) => row[0] as String).toList();
+    return result.map((r) => r[0] as String).toList();
   }
 
-  /// Supprime tous les joueurs
-  Future<void> clearAllPlayers() async {
-    await connection.execute('DELETE FROM players');
+  Future<void> deleteOldMessages() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final warningLimit = now - messageLifetimeMs;
+    final deleteLimit = now - messageLifetimeMs - warningDeltaMs;
+
+    // WARNING
+    final warningMessages = await connection.query('''
+      SELECT userName, partner
+      FROM messages
+      WHERE date < @warningLimit
+      AND type NOT IN ('WARNING')
+    ''', substitutionValues: {'warningLimit': warningLimit});
+
+    for (final row in warningMessages) {
+      final user = row[0];
+      final partner = row[1];
+
+      final deleteTimestamp = now + warningDeltaMs;
+
+      await insertOrReplaceMessage(
+        language: '',
+        userName: user,
+        expectedName: '',
+        partner: partner,
+        type: 'WARNING',
+        message: deleteTimestamp.toString(),
+      );
+
+      await insertOrReplaceMessage(
+        language: '',
+        userName: partner,
+        expectedName: '',
+        partner: user,
+        type: 'WARNING',
+        message: deleteTimestamp.toString(),
+      );
+    }
+
+    // DELETE
+    await connection.query('''
+      DELETE FROM messages
+      WHERE date < @deleteLimit
+    ''', substitutionValues: {'deleteLimit': deleteLimit});
   }
 
-  /// Supprimer l'entrée d'une partie d'un joueur
-  Future<void> removePlayerEntry(String userName, String partner) async {
-    try {
-      await connection.query(
-        'DELETE FROM players WHERE userName = @userName AND partner = @partner',
-        substitutionValues: {'userName': userName, 'partner': partner},
-      );
+  Future<void> cleanupOldGames() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final warningLimit = now - messageLifetimeMs;
+    final deleteLimit = now - messageLifetimeMs - warningDeltaMs;
 
-      if (debug) {
-        print("🗑️ Removed player entry: $userName ↔ $partner");
-      }
-    } catch (e) {
-      if (debug) {
-        if (e is PostgreSQLException) {
-          // Message d'erreur PostgreSQL
-          print(
-              "${logHeader('removePlayerEntry')} ❌ Erreur PostgreSQL: ${e.message}");
-          // Code d'erreur PostgreSQL
-          print(
-              "${logHeader('removePlayerEntry')} 🔢 Code d'erreur: ${e.code}");
-          // Sévérité de l'erreur (ex: ERROR, FATAL, etc.)
-          print("${logHeader('removePlayerEntry')} ⚠️ Sévérité: ${e.severity}");
-        } else {
-          // Erreur générique
-          print("${logHeader('removePlayerEntry')} ❌ Erreur inattendue: $e");
-        }
-      }
-    }
-  }
+    /// 1. Envoyer WARNING
+    final oldGames = await connection.query('''
+    SELECT userName, partner
+    FROM players
+    WHERE date < @warningLimit
+    AND type NOT IN ('WARNING')
+  ''', substitutionValues: {
+      'warningLimit': warningLimit,
+    });
 
-  /// Mettre à jour le message d'un joueur
-  Future<void> updateMessage(
-    String userName,
-    String partner,
-    Map<String, dynamic> msg,
-  ) async {
-    try {
-      await connection.query(
-        '''
-    UPDATE players
-    SET message = @message
-    WHERE userName = @userName AND partner = @partner
-    ''',
-        substitutionValues: {
-          'userName': userName,
-          'partner': partner,
-          'message': jsonEncode(msg),
-        },
-      );
-    } catch (e) {
-      if (debug) {
-        print("${logHeader('updateMessage')} Erreur inattendue: $e");
-      }
-    }
-  }
+    for (final row in oldGames) {
+      final user = row[0];
+      final partner = row[1];
+      final deleteTimestamp = now + warningDeltaMs;
 
-  /// Match deux joueurs :
-  /// - me : l'entrée qui vient d'appeler /connect
-  /// - match : l'entrée trouvée comme partenaire potentiel
-  ///
-  /// Règle :
-  ///   ✔ On ne modifie le partner du joueur distant que si partner=''
-  ///   ✔ On ajoute toujours le message "matched"
-  Future<void> matchPlayer(PlayerEntry me, PlayerEntry match) async {
-    // 1️⃣ Mise à jour conditionnelle du partner du joueur distant
-    try {
-      await connection.query(
-        '''
-        UPDATE players
-        SET partner = @meUserName,
-            partnerStartTime = @meStartTime
-        WHERE userName = @theirUserName
-          AND partner = ''
-        ''',
-        substitutionValues: {
-          'meUserName': me.userName,
-          'meStartTime': me.startTime,
-          'theirUserName': match.userName,
-        },
-      );
-    } catch (e) {
-      if (debug) {
-        print("${logHeader('matchPlayer')} Erreur UPDATE conditional: $e");
-      }
+      await sendMessage(user, partner, MSG_WARNING, deleteTimestamp.toString());
+      await sendMessage(partner, user, MSG_WARNING, deleteTimestamp.toString());
     }
 
-    // 2️⃣ Ajouter le message "matched" dans son entrée userName-partner
-    //    (ne dépend pas du résultat du UPDATE précédent)
-    try {
-      await updateMessage(
-        match.userName,
-        me.userName,
-        {
-          'type': 'matched',
-          'partner': me.userName,
-          'startTime': match.startTime,
-          'partnerStartTime': me.startTime,
-        },
-      );
-    } catch (e) {
-      if (debug) {
-        print("${logHeader('matchPlayer')} Erreur updateMessage: $e");
-      }
-    }
+    /// 2. Supprimer après délai
+    await connection.query('''
+    DELETE FROM players
+    WHERE date < @deleteLimit
+  ''', substitutionValues: {
+      'deleteLimit': deleteLimit,
+    });
   }
 }

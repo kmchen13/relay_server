@@ -3,7 +3,7 @@ import '../constants.dart';
 import '../utils/json_utils.dart';
 import '../services/player_repository.dart';
 
-Future<void> handleAck(HttpRequest req, PlayerRepository repo) async {
+Future<void> handleAck(HttpRequest req, MessageRepository repo) async {
   final userName = req.uri.queryParameters['userName'] ?? '';
   final partner = req.uri.queryParameters['partner'] ?? '';
   final type = req.uri.queryParameters['type'] ?? '';
@@ -17,10 +17,10 @@ Future<void> handleAck(HttpRequest req, PlayerRepository repo) async {
         },
         statusCode: HttpStatus.badRequest);
   }
-  repo.removePlayerEntry(userName, partner);
+  repo.deleteMessage(userName, partner);
   if (type == 'quit') {
     // Si c'est un quit, on supprime aussi l'entrée du partenaire
-    repo.removePlayerEntry(partner, userName);
+    repo.deleteMessage(partner, userName);
   }
   jsonResponse(req.response, {'status': 'ok'});
   if (debug) {
