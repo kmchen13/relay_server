@@ -2,4 +2,5 @@ library constants;
 
 const bool debug = true;
 const String appName = "Relay_server";
-const String version = "2.4.1";
+const int noMsgDelaySeconds = 5;
+const String version = "3.0.0";

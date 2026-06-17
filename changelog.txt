@@ -15,7 +15,7 @@
 1.8.0 Fonctionnement comme BAL. Suppression des messages dès qu'ils ont été lus, le serveur ne mémorise que les attentes de partenaire
 1.8.1 Correction version affichée
 1.8.2 Correction isLocal
-1.8.3 Correction table players, UNIQUE userName, partner
+1.8.3 Correction table players, UNIQUE user, partner
 1.8.4 
     Correction table players message TEXT
     Ajout player_utils matchPlayer(). On ne garde plus les entrées matchées.
@@ -40,3 +40,4 @@
 2.0.2 Correction pollHandler, création fonction dédiée getMessage
 2.4.0 Ajout du paramètre language
 2.4.1 Correction bugs divers
+3.0.0 Refonte de la couche réseau

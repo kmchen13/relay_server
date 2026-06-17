@@ -1,14 +1,15 @@
 import '../player_entry.dart';
 import '../constants.dart';
-import '../services/player_repository.dart';
+import '../services/messages_repository.dart';
+import '../models/message.dart';
 import 'dart:convert';
 
 /// Trouver une entrée de joueur ouverte (sans partenaire)
-Future<PlayerEntry?> findOpenEntry(PlayerRepository repo, String userName,
+Future<PlayerEntry?> findOpenEntry(PlayersRepository repo, String user,
     String expectedName, String language) async {
   final results = await repo.connection.query(
-    'SELECT * FROM players WHERE userName = @userName AND expectedName = @expectedName AND partner = \'\'',
-    substitutionValues: {'userName': userName, 'expectedName': expectedName},
+    'SELECT * FROM players WHERE user = @user AND expectedName = @expectedName AND partner = \'\'',
+    substitutionValues: {'user': user, 'expectedName': expectedName},
   );
 
   if (results.isEmpty) return null;
@@ -16,12 +17,12 @@ Future<PlayerEntry?> findOpenEntry(PlayerRepository repo, String userName,
 }
 
 /// Trouver un joueur correspondant pour le matching
-Future<PlayerEntry?> findMatchingCounterpart(PlayerRepository repo, String me,
+Future<PlayerEntry?> findMatchingCounterpart(PlayersRepository repo, String me,
     String myExpected, String language) async {
   final results = await repo.connection.query(
     '''
     SELECT * FROM players 
-    WHERE partner = '' AND userName != @me 
+    WHERE partner = '' AND user != @me 
       AND (expectedName = @me OR expectedName = '') 
       AND (@myExpected = '' OR expectedName = @myExpected)
       AND language = @language
@@ -46,9 +47,9 @@ Future<PlayerEntry?> findMatchingCounterpart(PlayerRepository repo, String me,
 /// PRECONDITIONS:
 /// - me.partner == ''
 /// - other.partner == ''
-/// - me.userName != other.userName
+/// - me.user != other.user
 Future<void> matchPlayers(
-  PlayerRepository repo,
+  PlayersRepository repo,
   PlayerEntry me,
   PlayerEntry match,
 ) async {
@@ -57,26 +58,26 @@ Future<void> matchPlayers(
     UPDATE players
     SET partner = @meName,
         partnerStartTime = @meStart
-    WHERE userName = @matchName
+    WHERE user = @matchName
       AND partner = ''
     ''',
     substitutionValues: {
-      'meName': me.userName,
+      'meName': me.user,
       'meStart': me.startTime,
-      'matchName': match.userName,
+      'matchName': match.user,
     },
   );
 }
 
 /// Vérifie si deux joueurs sont déjà dans une même partie
 Future<PlayerEntry?> findInGame(
-  PlayerRepository repo,
-  String userName,
+  PlayersRepository repo,
+  String user,
   String expectedName,
 ) async {
   final results = await repo.connection.query(
-    'SELECT * FROM players WHERE userName = @userName AND partner = @partner',
-    substitutionValues: {'userName': userName, 'partner': expectedName},
+    'SELECT * FROM players WHERE user = @user AND partner = @partner',
+    substitutionValues: {'user': user, 'partner': expectedName},
   );
 
   if (results.isEmpty) return null;
@@ -86,49 +87,11 @@ Future<PlayerEntry?> findInGame(
 /// Mettre en file un message pour un joueur spécifique.
 /// Si aucune entrée (from → to) n'existe encore, elle est créée.
 Future<void> queueMessageFor(
-  PlayerRepository repo,
+  PlayersRepository repo,
   String targetUser,
   String fromUser,
   Map<String, dynamic> msg,
-) async {
-  // Copie défensive du message
-  final safeMsg = Map<String, dynamic>.from(msg);
-
-  // Tente de récupérer le joueur cible
-  var target = await repo.getPlayer(targetUser);
-
-  // Si aucune entrée n'existe encore pour ce joueur, la créer
-  if (target == null) {
-    if (debug) {
-      print(
-          "🆕 Création d'une nouvelle PlayerEntry pour $targetUser (from $fromUser)");
-    }
-
-    target = PlayerEntry(
-      userName: targetUser,
-      expectedName: '',
-      partner: fromUser,
-      language: 'fr', // valeur par défaut
-      startTime: DateTime.now().millisecondsSinceEpoch,
-      partnerStartTime: 0, //inutilisé
-      message: safeMsg,
-    );
-
-    await repo.upsertPlayer(target);
-  } else {
-    // Sinon, mettre à jour le message existant
-    target.message = safeMsg;
-    await repo.updateMessage(targetUser, fromUser, safeMsg);
-    if (debug) {
-      print("🆕 Mise à jour de PlayerEntry pour $targetUser (from $fromUser)");
-    }
-  }
-
-  if (debug) {
-    print(
-        "💌 Message mis en file pour $targetUser depuis $fromUser: ${jsonEncode(safeMsg)}");
-  }
-}
+) async {}
 
 class IncomingMessage {
   final String partner;
@@ -143,14 +106,13 @@ class IncomingMessage {
 }
 
 /// Récupérer un message en attente pour un joueur spécifique.
-Future<IncomingMessage?> getMessage(
-    PlayerRepository repo, String userName) async {
+Future<IncomingMessage?> getMessage(PlayersRepository repo, String user) async {
   final result = await repo.connection.query(
     'SELECT partner, message '
     'FROM players '
-    'WHERE userName = @userName AND message IS NOT NULL '
+    'WHERE user = @user AND message IS NOT NULL '
     'LIMIT 1',
-    substitutionValues: {'userName': userName},
+    substitutionValues: {'user': user},
   );
 
   if (result.isEmpty) return null;
@@ -179,9 +141,9 @@ Future<IncomingMessage?> getMessage(
 }
 
 /// Afficher la liste des joueurs dans la console pour le débogage
-Future<void> showPlayers(PlayerRepository repo) async {
+Future<void> showPlayers(PlayersRepository repo) async {
   final results = await repo.connection.query(
-      'SELECT userName, expectedName, partner, startTime, partnerStartTime, message FROM players');
+      'SELECT user, expectedName, partner, startTime, partnerStartTime, message FROM players');
   if (!debug) return;
 
   print('[$appName v$version] Joueurs enregistrés:');
@@ -194,8 +156,7 @@ Future<void> showPlayers(PlayerRepository repo) async {
     final hms =
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
 
-    final userName =
-        p.userName.length > 3 ? p.userName.substring(0, 3) : p.userName;
+    final user = p.user.length > 3 ? p.user.substring(0, 3) : p.user;
     final partner = p.partner.isEmpty
         ? ' — '
         : p.partner.length > 3
@@ -205,139 +166,195 @@ Future<void> showPlayers(PlayerRepository repo) async {
         ? 'no'
         : p.message!['type'].toString().padRight(9).substring(0, 7);
 
-    print('| $userName | $hms | $partner | $message |');
+    print('| $user | $hms | $partner | $message |');
   }
 }
 
-Future<String> showPlayersAsHTML(PlayerRepository repo) async {
-  final results = await repo.connection.query(
-      'SELECT userName, expectedName, partner, startTime, partnerStartTime, message FROM players');
+Future<String> showMessagesAsHTML(
+  PlayersRepository repo,
+) async {
+  final results = await repo.connection.query('''
+    SELECT
+      user_name,
+      partner_name,
+      date,
+      type,
+      message
+    FROM messages
+    ORDER BY date ASC
+    ''');
+
   final buffer = StringBuffer();
 
   buffer.writeln('''
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>$appName v$version</title>
-  <style>
-    body {
-      background-color: #000;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      font-size: clamp(12px, 1.8vw, 22px);
-      padding: 10px;
-    }
+<meta charset="utf-8">
 
-    h1 {
-      font-size: clamp(20px, 3vw, 40px);
-    }
+<title>$appName v$version</title>
 
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 20px;
-      font-size: inherit;
-    }
+<style>
+body {
+ background:#000;
+ color:#fff;
+ font-family:Arial;
+ padding:10px;
+}
 
-    th, td {
-      border: 1px solid #555;
-      padding: 6px 10px;
-      text-align: left;
-      word-break: break-word;
-    }
+table {
+ border-collapse:collapse;
+ width:100%;
+}
 
-    th {
-      background-color: #222;
-    }
+th,td {
+ border:1px solid #555;
+ padding:6px;
+}
 
-    tr:nth-child(even) {
-      background-color: #111;
-    }
+th {
+ background:#222;
+}
 
-    button {
-      margin-top: 20px;
-      padding: 8px 12px;
-      font-size: clamp(12px, 1.5vw, 18px);
-      border-radius: 6px;
-      border: none;
-      background: #444;
-      color: white;
-      cursor: pointer;
-    }
+button {
+ padding:8px 12px;
+ font-size:16px;
+ border-radius:6px;
+ cursor:pointer;
+}
 
-    button:hover {
-      background: #666;
-    }
+.delete-button {
+ background:#f44;
+ color:white;
+ border:none;
+}
 
-    .delete-button {
-      background: #ff4444;
-    }
+.delete-button:hover {
+ background:#f66;
+}
 
-    .delete-button:hover {
-      background: #ff6666;
-    }
-  </style>
-  <script>
-    function confirmDelete(userName) {
-      return confirm('Voulez-vous vraiment supprimer l\\'entrée pour ' + userName + ' ?');
-    }
-  </script>
+.refresh-button {
+ background:#444;
+ color:white;
+ border:none;
+}
+
+</style>
+
+<script>
+function confirmDelete(x){
+ return confirm("Supprimer "+x+" ?");
+}
+</script>
+
 </head>
+
 <body>
 ''');
 
   buffer.writeln('<h1>$appName v$version</h1>');
-  buffer.writeln('<table>');
-  buffer.writeln(
-      '<tr><th>User</th><th>Time</th><th>Partner</th><th>Message</th><th>Actions</th></tr>');
+
+  buffer.writeln('''
+<table>
+
+<tr>
+<th>User</th>
+<th>Partner</th>
+<th>Date</th>
+<th>Type</th>
+<th>Action</th>
+</tr>
+''');
 
   for (final row in results) {
-    final p = PlayerEntry.fromPgRow(row);
-    final dt = DateTime.fromMillisecondsSinceEpoch(p.startTime);
-    final hms =
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+    final msg = MessageEntry.fromRow(row);
 
-    final userName = p.userName;
-    final partner =
-        p.partner; // Conservez la valeur originale pour le formulaire
-    final displayPartner = p.partner.isEmpty
-        ? '—'
-        : p.partner; // Utilisez cette valeur pour l'affichage
-    final message = p.message == null ? 'no' : p.message!['type'].toString();
+    final dt = DateTime.fromMillisecondsSinceEpoch(msg.date);
+
+    final hms = '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}:'
+        '${dt.second.toString().padLeft(2, '0')}';
 
     buffer.writeln('''
-    <tr>
-      <td>$userName</td>
-      <td>$hms</td>
-      <td>$displayPartner</td> <!-- Affiche le tiret si vide -->
-      <td>$message</td>
-      <td>
-        <form method="POST" action="/admin/entryDelete" onsubmit="return confirmDelete('$userName-$partner')">
-          <input type="hidden" name="userName" value="$userName">
-          <input type="hidden" name="partner" value="$partner"> <!-- Utilisez la valeur originale -->
-          <button type="submit" class="delete-button">Supprimer</button>
-        </form>
-      </td>
-    </tr>
-  ''');
+<tr>
+
+<td>${msg.user}</td>
+
+<td>${msg.partner ?? ''}</td>
+
+<td>
+${dt.toIso8601String()}<br>
+$hms
+</td>
+
+<td>
+${msg.type}
+</td>
+
+<td>
+
+<form method="POST"
+ action="/admin/entryDelete"
+ onsubmit="return confirmDelete('${msg.user}-${msg.partner ?? ''}')">
+
+
+<input type="hidden"
+ name="user"
+ value="${msg.user}">
+
+
+<input type="hidden"
+ name="partner"
+ value="${msg.partner ?? ''}">
+
+
+<input type="hidden"
+ name="date"
+ value="${msg.date}">
+
+
+<button 
+ type="submit"
+ class="delete-button">
+</button>
+
+
+</form>
+
+</td>
+
+</tr>
+''');
   }
 
-  buffer.writeln('</table>');
-
-  // Bloc boutons
   buffer.writeln('''
-    <div style="display:flex; gap:10px; margin-top:10px;">
-      <form method="GET" action="/admin/players">
-        <button type="submit">Rafraîchir</button>
-      </form>
-      <form method="POST" action="/admin/clear">
-        <button type="submit">Clear Players</button>
-      </form>
-    </div>
-  ''');
+</table>
 
-  buffer.writeln('</body></html>');
+<br>
+
+<div style="display:flex; gap:10px;">
+
+<form method="GET" action="/admin/players">
+<button class="refresh-button" type="submit">
+Rafraîchir
+</button>
+</form>
+
+
+<form method="POST" action="/admin/clear">
+
+<button class="delete-button" type="submit">
+Clear messages
+</button>
+
+</form>
+
+</div>
+
+
+</body>
+</html>
+''');
 
   return buffer.toString();
 }

@@ -13,14 +13,14 @@ class PlayerRepository {
     await connection.query('''
 CREATE TABLE IF NOT EXISTS players (
   id SERIAL PRIMARY KEY,
-  userName TEXT NOT NULL,
+  user TEXT NOT NULL,
   expectedName TEXT NOT NULL DEFAULT '',
   partner TEXT NOT NULL DEFAULT '',
   language TEXT NOT NULL DEFAULT 'fr',
   startTime BIGINT NOT NULL,
   partnerStartTime BIGINT NULL,
   message TEXT,
-  UNIQUE (userName, partner)
+  UNIQUE (user, partner)
 );
     ''');
     await connection.query('DISCARD ALL;');
@@ -36,9 +36,9 @@ CREATE TABLE IF NOT EXISTS players (
     }
 
     await connection.query('''
-      INSERT INTO players (userName, expectedName, partner, language, startTime, partnerStartTime, message)
-      VALUES (@userName, @expectedName, @partner, @language, @startTime, @partnerStartTime, @message)
-      ON CONFLICT (userName, partner) DO UPDATE
+      INSERT INTO players (user, expectedName, partner, language, startTime, partnerStartTime, message)
+      VALUES (@user, @expectedName, @partner, @language, @startTime, @partnerStartTime, @message)
+      ON CONFLICT (user, partner) DO UPDATE
       SET expectedName = EXCLUDED.expectedName,
           partner = EXCLUDED.partner,
           language = EXCLUDED.language,
@@ -49,11 +49,11 @@ CREATE TABLE IF NOT EXISTS players (
   }
 
   /// Récupérer un joueur
-  Future<PlayerEntry?> getPlayer(String userName) async {
+  Future<PlayerEntry?> getPlayer(String user) async {
     final result = await connection.query(
-      'SELECT userName, expectedName, partner, language, startTime, partnerStartTime, message '
-      'FROM players WHERE userName = @userName',
-      substitutionValues: {'userName': userName},
+      'SELECT user, expectedName, partner, language, startTime, partnerStartTime, message '
+      'FROM players WHERE user = @user',
+      substitutionValues: {'user': user},
     );
 
     if (result.isEmpty) return null;
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS players (
         (messageValue is String) ? jsonDecode(messageValue) : messageValue;
 
     return PlayerEntry(
-      userName: row[0]?.toString() ?? '',
+      user: row[0]?.toString() ?? '',
       expectedName: row[1]?.toString() ?? '',
       partner: row[2]?.toString() ?? '',
       language: row[2]?.toString() ?? 'fr',
@@ -78,13 +78,13 @@ CREATE TABLE IF NOT EXISTS players (
   /// Récupérer tous les joueurs
   Future<List<PlayerEntry>> getAllPlayers() async {
     final result = await connection.query(
-      'SELECT userName, expectedName, partner, language, startTime, partnerStartTime, message FROM players',
+      'SELECT user, expectedName, partner, language, startTime, partnerStartTime, message FROM players',
     );
 
     return result.map((row) {
       final messageJson = row[5];
       return PlayerEntry(
-        userName: row[0] ?? '',
+        user: row[0] ?? '',
         expectedName: row[1] ?? '',
         partner: row[2] ?? '',
         language: row[2] ?? 'fr',
@@ -103,15 +103,15 @@ CREATE TABLE IF NOT EXISTS players (
   }
 
   /// Supprimer l'entrée d'une partie d'un joueur
-  Future<void> removePlayerEntry(String userName, String partner) async {
+  Future<void> removePlayerEntry(String user, String partner) async {
     try {
       await connection.query(
-        'DELETE FROM players WHERE userName = @userName AND partner = @partner',
-        substitutionValues: {'userName': userName, 'partner': partner},
+        'DELETE FROM players WHERE user = @user AND partner = @partner',
+        substitutionValues: {'user': user, 'partner': partner},
       );
 
       if (debug) {
-        print("🗑️ Removed player entry: $userName ↔ $partner");
+        print("🗑️ Removed player entry: $user ↔ $partner");
       }
     } catch (e) {
       if (debug) {
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS players (
 
   /// Mettre à jour le message d'un joueur
   Future<void> updateMessage(
-    String userName,
+    String user,
     String partner,
     Map<String, dynamic> msg,
   ) async {
@@ -143,10 +143,10 @@ CREATE TABLE IF NOT EXISTS players (
         '''
     UPDATE players
     SET message = @message
-    WHERE userName = @userName AND partner = @partner
+    WHERE user = @user AND partner = @partner
     ''',
         substitutionValues: {
-          'userName': userName,
+          'user': user,
           'partner': partner,
           'message': jsonEncode(msg),
         },
@@ -173,13 +173,13 @@ CREATE TABLE IF NOT EXISTS players (
         UPDATE players
         SET partner = @meUserName,
             partnerStartTime = @meStartTime
-        WHERE userName = @theirUserName
+        WHERE user = @theirUserName
           AND partner = ''
         ''',
         substitutionValues: {
-          'meUserName': me.userName,
+          'meUserName': me.user,
           'meStartTime': me.startTime,
-          'theirUserName': match.userName,
+          'theirUserName': match.user,
         },
       );
     } catch (e) {
@@ -188,15 +188,15 @@ CREATE TABLE IF NOT EXISTS players (
       }
     }
 
-    // 2️⃣ Ajouter le message "matched" dans son entrée userName-partner
+    // 2️⃣ Ajouter le message "matched" dans son entrée user-partner
     //    (ne dépend pas du résultat du UPDATE précédent)
     try {
       await updateMessage(
-        match.userName,
-        me.userName,
+        match.user,
+        me.user,
         {
           'type': 'matched',
-          'partner': me.userName,
+          'partner': me.user,
           'startTime': match.startTime,
           'partnerStartTime': me.startTime,
         },

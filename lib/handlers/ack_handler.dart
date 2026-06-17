@@ -1,29 +1,49 @@
 import 'dart:io';
-import '../constants.dart';
-import '../utils/json_utils.dart';
-import '../services/player_repository.dart';
 
-Future<void> handleAck(HttpRequest req, PlayerRepository repo) async {
-  final userName = req.uri.queryParameters['userName'] ?? '';
-  final partner = req.uri.queryParameters['partner'] ?? '';
-  final type = req.uri.queryParameters['type'] ?? '';
-  if (userName.isEmpty) {
-    print(
-        "[$appName v$version] 🔔 /ack error: missing parameter player='$userName'");
-    return jsonResponse(
+import '../services/messages_repository.dart';
+import '../utils/json_utils.dart';
+
+Future<void> handleAck(HttpRequest req, PlayersRepository repo) async {
+  try {
+    final user = req.uri.queryParameters['user'] ?? '';
+
+    final partner = req.uri.queryParameters['partner'];
+
+    final type = req.uri.queryParameters['type'] ?? '';
+
+    final dateStr = req.uri.queryParameters['date'] ?? '';
+
+    if (user.isEmpty || type.isEmpty || dateStr.isEmpty) {
+      jsonResponse(
+          req.response,
+          {
+            'error': 'missing_parameter',
+          },
+          statusCode: HttpStatus.badRequest);
+      return;
+    }
+
+    final date = int.tryParse(dateStr);
+
+    if (date == null) {
+      jsonResponse(
+          req.response,
+          {
+            'error': 'invalid_date',
+          },
+          statusCode: HttpStatus.badRequest);
+      return;
+    }
+
+    await repo.ack(user: user, partner: partner, date: date, type: type);
+
+    jsonResponse(req.response, {'status': 'OK'});
+  } catch (e) {
+    jsonResponse(
         req.response,
         {
-          'status': 'error: missing_parameters',
+          'error': e.toString(),
         },
-        statusCode: HttpStatus.badRequest);
-  }
-  repo.removePlayerEntry(userName, partner);
-  if (type == 'quit') {
-    // Si c'est un quit, on supprime aussi l'entrée du partenaire
-    repo.removePlayerEntry(partner, userName);
-  }
-  jsonResponse(req.response, {'status': 'ok'});
-  if (debug) {
-    print("[$appName v$version] 🔔 /ack player=$userName partner=$partner");
+        statusCode: HttpStatus.internalServerError);
   }
 }

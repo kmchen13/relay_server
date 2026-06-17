@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 class PlayerEntry {
-  String userName; // le joueur local
+  String user; // le joueur local
   String expectedName; // partenaire attendu ("" = aléatoire)
   String partner; // rempli après match
   String language; // langue du joueur
@@ -10,7 +10,7 @@ class PlayerEntry {
   Map<String, dynamic>? message; // message en attente
 
   PlayerEntry({
-    required this.userName,
+    required this.user,
     required this.expectedName,
     required this.startTime,
     required this.language,
@@ -21,7 +21,7 @@ class PlayerEntry {
 
   /// Conversion PlayerEntry → Map pour PostgreSQL
   Map<String, dynamic> asRow() => {
-        'userName': userName,
+        'user': user,
         'expectedName': expectedName,
         'language': language,
         'partner': partner,
@@ -33,7 +33,7 @@ class PlayerEntry {
   /// Conversion Map JSON → PlayerEntry (ex : fichier local)
   factory PlayerEntry.fromRow(Map<String, dynamic> row) {
     return PlayerEntry(
-      userName: row['username']?.toString() ?? '',
+      user: row['username']?.toString() ?? '',
       expectedName: row['expectedname']?.toString() ?? '',
       language: row['language']?.toString() ?? '',
       startTime: row['starttime'] is int
@@ -52,7 +52,7 @@ class PlayerEntry {
   /// Conversion PostgreSQL row (List) → PlayerEntry
   factory PlayerEntry.fromPgRow(List row) {
     return PlayerEntry(
-      userName: row[0]?.toString() ?? '',
+      user: row[0]?.toString() ?? '',
       expectedName: row[1]?.toString() ?? '',
       language: row[2]?.toString() ?? '',
       startTime: row[3] is int

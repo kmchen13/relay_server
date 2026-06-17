@@ -1,56 +1,71 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:relay_server/services/utility.dart';
-import 'package:relay_server/player_entry.dart';
 
-import '../services/player_repository.dart';
+import '../services/messages_repository.dart';
 import '../utils/json_utils.dart';
 import '../constants.dart';
 
-Future<void> handleQuit(HttpRequest req, PlayerRepository repo) async {
+Future<void> handleQuit(
+  HttpRequest req,
+  PlayersRepository repo,
+) async {
   try {
     final body = await utf8.decoder.bind(req).join();
+
     final data = jsonDecode(body) as Map<String, dynamic>;
-    final String userName = (data['userName'] ?? '').toString();
+
+    final String user = (data['user'] ?? '').toString();
     final String partner = (data['partner'] ?? '').toString();
 
-    if (userName.isEmpty || partner.isEmpty) {
-      jsonResponse(req.response, {'status': 'Invalid_quit_parameters'});
-      if (debug)
-        print("[$appName v$version] 🔔 Invalid_quit_parameters '$data'");
+    if (user.isEmpty || partner.isEmpty) {
+      jsonResponse(
+        req.response,
+        {'status': 'ERROR', 'message': 'Invalid_quit_parameters'},
+      );
+
+      if (debug) {
+        print(
+          "[$appName v$version] 🔔 Invalid_quit_parameters $data",
+        );
+      }
+
       return;
-    } else if (debug) {
-      print("[$appName v$version] 🔔 /quit $userName - $partner");
     }
 
-    //supprimer l'entrée si elle existe'
-    repo.removePlayerEntry(
-      userName,
+    if (debug) {
+      print(
+        "[$appName v$version] 🔔 /quit $user → $partner",
+      );
+    }
+
+    // Nettoyage éventuel des messages de partie
+    await repo.deleteGameMessages(
+      user,
       partner,
     );
 
-    //créer une entrée avec le message de quit pour le partenaire
-    final message = {
-      'type': 'quit',
-      'from': userName,
-      'to': partner,
-    };
-
-    final partnerEntry = PlayerEntry(
-      userName: partner,
-      expectedName: '',
-      language: 'fr',
-      startTime: DateTime.now().millisecondsSinceEpoch,
-      partner: userName,
-      partnerStartTime: 0,
-      message: message,
+    // Message envoyé au partenaire
+    await repo.insertMessage(
+      user: partner,
+      partner: user,
+      type: 'GAMEQUIT',
+      message: jsonEncode({
+        'from': user,
+        'to': partner,
+      }),
     );
 
-    await repo.upsertPlayer(partnerEntry);
+    jsonResponse(
+      req.response,
+      {
+        'status': 'QUIT_SUCCESS',
+      },
+    );
 
-    jsonResponse(req.response, {'status': 'quit_success'});
     if (debug) {
-      print("[$appName v$version] 🛑 $userName a quitté la partie");
+      print(
+        "[$appName v$version] 🛑 $user a quitté la partie",
+      );
     }
   } catch (e, s) {
     jsonResponse(
@@ -58,7 +73,7 @@ Future<void> handleQuit(HttpRequest req, PlayerRepository repo) async {
       {
         'error': 'invalid_request',
         'details': e.toString(),
-        'stack': s.toString()
+        'stack': s.toString(),
       },
       statusCode: HttpStatus.badRequest,
     );

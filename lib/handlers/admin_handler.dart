@@ -1,47 +1,91 @@
 import 'dart:io';
-import '../utils/player_utils.dart';
-import '../services/player_repository.dart';
-import '../constants.dart';
-import '../utils/json_utils.dart';
 import 'dart:convert';
 
-Future<void> handleAdmin(HttpRequest req, PlayerRepository repo) async {
+import '../services/messages_repository.dart';
+import '../constants.dart';
+import '../utils/json_utils.dart';
+import '../utils/player_utils.dart';
+
+Future<void> handleAdmin(
+  HttpRequest req,
+  PlayersRepository repo,
+) async {
+  bool refresh = false;
+
   switch (req.uri.path) {
     case '/admin/clear' when req.method == 'POST':
-      // Supprimer tous les joueurs dans la BDD
-      await repo.clearAllPlayers();
+      await repo.clear();
+
+      if (debug) {
+        print(
+          "[$appName v$version] 🧹 messages table cleared",
+        );
+      }
+
+      refresh = true;
       break;
 
     case '/admin/entryDelete' when req.method == 'POST':
       final content = await utf8.decodeStream(req);
       final formData = Uri.splitQueryString(content);
 
-      final String userName = formData['userName'] ?? '';
-      final String partner = formData['partner'] ?? '';
+      final user = formData['user'] ?? '';
+      final partner = formData['partner'] ?? '';
+      final dateStr = formData['date'] ?? '';
 
-      if (userName.isEmpty) {
-        jsonResponse(req.response, {'status': 'Invalid_parameters'});
+      final date = int.tryParse(dateStr);
+
+      if (user.isEmpty || date == null) {
+        jsonResponse(
+          req.response,
+          {
+            'status': 'error',
+            'message': 'missing parameters',
+          },
+          statusCode: HttpStatus.badRequest,
+        );
         return;
       }
-      if (userName.isEmpty) {
+
+      await repo.deleteMessage(
+        user,
+        partner.isEmpty ? null : partner,
+        date,
+      );
+
+      if (debug) {
         print(
-            "[$appName v$version] 🔔 /admin/entryDelete: missing parameter player='$userName'");
-        return jsonResponse(
-            req.response,
-            {
-              'status': 'error: missing_parameters',
-            },
-            statusCode: HttpStatus.badRequest);
+          "[$appName v$version] 🗑 message supprimé "
+          "$user/$partner/$date",
+        );
       }
-      await repo.removePlayerEntry(userName, partner);
-      print(
-          "[$appName v$version] 🔔 /entryDelete: Entry '$userName-$partner' deleted");
+
+      refresh = true;
+      break;
   }
 
-  // Page admin par défaut
+  // traitement commun des POST admin
+  if (refresh) {
+    req.response.statusCode = HttpStatus.seeOther;
+
+    req.response.headers.set(
+      HttpHeaders.locationHeader,
+      '/admin/players',
+    );
+
+    await req.response.close();
+    return;
+  }
+
+  // affichage normal GET /admin/players
 
   req.response.statusCode = HttpStatus.ok;
+
   req.response.headers.contentType = ContentType.html;
-  req.response.write(await showPlayersAsHTML(repo));
+
+  req.response.write(
+    await showMessagesAsHTML(repo),
+  );
+
   await req.response.close();
 }

@@ -1,0 +1,79 @@
+SHEMA RELAY_SERVER
+
+I) TABLE DES MESSAGES
+relay_server maintient une table messages ainsi structurée:
+CREATE TABLE messages (
+    user TEXT NOT NULL, partner TEXT NULL, date BIGINT NOT NULL, type TEXT NOT NULL, message TEXT NULL,
+    PRIMARY KEY (user, partner, date),
+    INDEX idx_messages_date ON messages(date)
+    );
+- user ne peut être null
+- partner peut être null
+- date est mis à jour à chaque insert/update. Il est en millisecondsSinceEpoch
+- type peut prendre les valeurs suivantes: CONNECT | MATCHED | GAMESTATE | GAMEOVER | GAMEQUIT | CHAT
+Les messages sont traités FIFO.
+
+II) PROTOCOLE DES REQUËTES SERVEUR RELAI
+Les requêtes sont appelées par POST.
+
+/CONNECT(user, partner):
+un joueur libre (partner='') accepte un autre joueur libre OU un joueur qui le cherche explicitement.
+Et un joueur qui cherche quelqu'un de précis accepte la demande ciblée réciproque OU la demande libre de cette personne.
+
+Si user matche il reçoit immédiatement HTTP "MATCHED" et un message (partner, user, date, MATCHED, 'user') est placé dans la table des messages et la ligne CONNECT qui a servi au match est supprimée.
+DELETE FROM messages
+WHERE user = ?
+  AND partner = ?
+  AND date = ?
+  AND type = 'CONNECT'
+
+S'il n'y a pas MATCH, une entrée (user, partner, date, CONNECT) est créée et une réponse HTTP "WAITING" est envoyée
+
+/DISCONNECT(user):
+Les messages (user, *, *, CONNECT, *) sont supprimés
+Il ne souhaite plus recevoir de partenaire. Si des messages lui sont destinés ils sont conservés sur le relai jusqu'à ce qu'il envoie un /POLL
+
+/POLL(user):
+Le plus vieux message (user, *, *, *, *) est renvoyé en réponse à la requête.
+SELECT *
+FROM messages
+WHERE user = ?
+ORDER BY date ASC
+LIMIT 1
+
+/GAMESTATE(user, partner, GameState):
+Une entrée (partner, user, date, GAMESTATE, GameState) est créée dans la table des messages.
+
+/GAMEOVER(user, partner, GameState):
+Une entrée (partner, user, date, GAMEOVER, GameState) est créée dans la table messages.
+
+/GAMEQUIT(user, partner):
+Les messages (user,partner, *, (GAMESTATE|GAMEOVER)) sont supprimés, un message (partner, user, date, GAMEQUIT, '') est placé dans les messages.
+
+/CHAT(user, partner, messsage):
+un message (partner, user, date, CHAT, 'message' est placé dans les messages.
+
+/ACK(user, partner, date, type):
+le message (user, partner, date, type, *) est supprimé.
+DELETE
+FROM messages
+WHERE user=?
+  AND partner=?
+  AND date=?
+  AND type=?
+  
+/ADMIN(command, user, partner):
+command peut prendre les valeurs LIST(), DELETE(user, partner, date), CLEAR()
+    - LIST Affiche la liste des entrées de la table des messages avec un bouton DELETE sur chaque ligne et un bouton CLEAR en pied de page
+    - DELETE(user,partner, date) La ligne (user, partner, date) est supprimée
+    - CLEAR() la table messages est vidée
+
+
+III) MESSAGES LIFE TIME
+
+Tous les messages enregistrés par le serveur ont une durée de vie maximale MESSAGETTL qu'on intialisera à 1 semaine.
+Tous les MESSAGETTL on scrutte la table des messages par date. Quand un messsage dépasse MESSAGETTL on le supprime.
+Cette procédure n'a pour objectif que de dégraisser la table des messages. Les problèmes de reprise de partie après MESSAGETTL doit êtreréglé entre les joueurs avec l'option REPLAY
+
+IV) SPAM POLL
+Si un user pn'a pas de message on attend NO_MSG_DELAY (initialisé à 5 secondes) aveant de répondre.

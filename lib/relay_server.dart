@@ -13,7 +13,7 @@ import 'handlers/admin_handler.dart';
 import 'handlers/ack_handler.dart';
 import 'handlers/dictionary_handler.dart';
 import 'constants.dart';
-import 'services/player_repository.dart';
+import 'services/messages_repository.dart';
 
 Future<void> main() async {
   late PostgreSQLConnection connection;
@@ -76,7 +76,7 @@ Future<void> main() async {
     rethrow;
   }
 
-  final repo = PlayerRepository(connection);
+  final repo = PlayersRepository(connection);
   await repo.init();
 
   // Boucle de surveillance pour rouvrir la connexion en cas de déconnexion
@@ -115,7 +115,7 @@ Future<void> startServer(repo) async {
     // if (debug) {
     //   final queryParameters = req.uri.queryParameters;
     //   print(
-    //       "[$appName v$version] ➡️ Requête reçue: $rqt \n Paramètres: $queryParameters");
+    //       "[$appName v$version] ${DateTime.now()} ➡️ Requête reçue: $rqt \n Paramètres: $queryParameters");
     // }
     try {
       if (req.method == 'POST' && rqt == '/connect') {
@@ -136,7 +136,6 @@ Future<void> startServer(repo) async {
         await handleAck(req, repo);
       } else if (rqt == '/dictionary') {
         await handleDictionary(req);
-        return;
       }
     } catch (e, st) {
       if (debug) {
