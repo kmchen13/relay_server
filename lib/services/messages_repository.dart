@@ -86,17 +86,18 @@ class PlayersRepository {
   ) async {
     final result = await connection.query(
       '''
-      SELECT
-        user_name,
-        partner_name,
-        date,
-        type,
-        message
-      FROM messages
-      WHERE user_name=@user_name
-      ORDER BY date ASC
-      LIMIT 1
-      ''',
+    SELECT
+      user_name,
+      partner_name,
+      date,
+      type,
+      message
+    FROM messages
+    WHERE user_name=@user_name
+      AND type <> 'CONNECT'
+    ORDER BY date ASC
+    LIMIT 1
+    ''',
       substitutionValues: {
         'user_name': user,
       },

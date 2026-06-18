@@ -45,3 +45,5 @@
     Correction de /disconnect
     Nettoyage imports inutilisés
     Nettoyage fichiers inutilisés
+3.0.3
+    Correction conflit message CONNECT avec les autres types de messages
