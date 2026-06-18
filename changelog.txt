@@ -41,3 +41,7 @@
 2.4.0 Ajout du paramètre language
 2.4.1 Correction bugs divers
 3.0.0 Refonte de la couche réseau
+3.0.1 
+    Correction de /disconnect
+    Nettoyage imports inutilisés
+    Nettoyage fichiers inutilisés

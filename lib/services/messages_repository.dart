@@ -1,6 +1,4 @@
 import 'package:postgres/postgres.dart';
-
-import '../constants.dart';
 import '../models/message.dart';
 
 class PlayersRepository {
@@ -286,6 +284,19 @@ class PlayersRepository {
         'user_name': match.user,
         'partner_name': match.partner,
         'date': match.date,
+      },
+    );
+  }
+
+  Future<void> deletePendingConnect(String user) async {
+    await connection.query(
+      '''
+    DELETE FROM messages
+    WHERE user_name = @user
+    AND type = 'CONNECT'
+    ''',
+      substitutionValues: {
+        'user': user,
       },
     );
   }
