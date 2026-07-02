@@ -47,3 +47,5 @@
     Nettoyage fichiers inutilisés
 3.0.3
     Correction conflit message CONNECT avec les autres types de messages
+3.1.0
+    Ajout de /getFreePlayersList

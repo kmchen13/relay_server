@@ -301,4 +301,38 @@ class PlayersRepository {
       },
     );
   }
+
+  // Dans players_repository.dart
+
+  Future<List<Map<String, dynamic>>> getFreePlayers() async {
+    try {
+      final result = await connection.query(
+        '''
+      SELECT
+        user_name,
+        partner_name,
+        date,
+        type,
+        message
+      FROM messages
+      WHERE type='CONNECT'
+      AND partner_name = ''
+      ORDER BY date ASC
+      ''',
+      );
+
+      return result.map((row) {
+        return {
+          'user_name': row[0],
+          'partner_name': row[1],
+          'date': row[2],
+          'type': row[3],
+          'message': row[4],
+        };
+      }).toList();
+    } catch (e) {
+      print('❌ Erreur dans getFreePlayers: $e');
+      rethrow;
+    }
+  }
 }
