@@ -29,6 +29,8 @@ Future<void> main() async {
   Map<String, String> loadConfig() {
     if (isLocalEnvironment()) {
       // En local, charge le fichier .env.dev
+      print(
+          '[$appName v$version] ⚙️ Chargement de la configuration en mode local');
       final env = DotEnv()..load(['.env.dev']);
       return {
         'host': env['DB_HOST'] ?? (throw Exception('DB_HOST non défini')),
@@ -40,6 +42,8 @@ Future<void> main() async {
       };
     } else {
       // En production (Render.com), utilise Platform.environment
+      print(
+          '[$appName v$version] ⚙️ Chargement de la configuration en mode production');
       final env = Platform.environment;
       return {
         'host': env['DB_HOST'] ?? (throw Exception('DB_HOST non défini')),

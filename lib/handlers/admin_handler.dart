@@ -49,7 +49,7 @@ Future<void> handleAdmin(
 
       await repo.deleteMessage(
         user,
-        partner.isEmpty ? null : partner,
+        partner,
         date,
       );
 

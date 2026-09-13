@@ -49,3 +49,5 @@
     Correction conflit message CONNECT avec les autres types de messages
 3.1.0
     Ajout de /getFreePlayersList
+3.1.0
+    Correction deleteMessage avec partner null (connect)

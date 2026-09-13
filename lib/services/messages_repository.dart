@@ -198,7 +198,7 @@ class PlayersRepository {
       ''',
       substitutionValues: {
         'user_name': user,
-        'partner_name': partner,
+        'partner_name': partner ?? '',
         'date': date,
       },
     );
