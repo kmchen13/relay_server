@@ -31,13 +31,10 @@ void _logRequest(String rqt, Map<String, String> queryParameters) {
   if (key == _lastLogKey) {
     _repeatCount++;
 
-    // Ajouter uniquement le compteur
-    stdout.write('\r'); // retour au début de la ligne
-    stdout.write(
-      '[v$version] $_lastTimestamp ➡️ $rqt / $queryParameters, x$_repeatCount',
-    );
+    // Afficher uniquement le compteur
+    stdout.write(', x$_repeatCount');
   } else {
-    // Valider la ligne précédente
+    // Terminer la ligne précédente
     if (_lastLogKey != null) {
       stdout.writeln();
     }
@@ -46,6 +43,7 @@ void _logRequest(String rqt, Map<String, String> queryParameters) {
     _repeatCount = 1;
     _lastTimestamp = DateTime.now().toString();
 
+    // Afficher la nouvelle requête
     stdout.write(
       '[v$version] $_lastTimestamp ➡️ $rqt / $queryParameters',
     );

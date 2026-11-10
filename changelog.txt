@@ -63,13 +63,13 @@
 3.2.4
     Modification affichage logs
 3.2.5
-    Modification affichage logs
-3.2.5
     Adapatation logs répétitifs pour Render
 3.2.6
     Corrections affichage logs pour Render
 3.2.7
     Corrections affichage logs pour Render
 3.2.8
+    Corrections affichage logs pour Render
+3.2.9
     Corrections affichage logs pour Render
     
