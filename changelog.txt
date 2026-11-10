@@ -51,3 +51,6 @@
     Ajout de /getFreePlayersList
 3.1.1
     Correction deleteMessage avec partner null (connect)
+3.2.0
+    Ajout bascule debug ON/OFF dans /admin
+    modification dockerfile pour passage à debian 12 bookworm
