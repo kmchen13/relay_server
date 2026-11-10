@@ -62,3 +62,5 @@
     Correction admin_handler
 3.2.4
     Modification affichage logs
+3.2.5
+    Modification affichage logs
