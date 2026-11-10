@@ -119,8 +119,7 @@ Future<void> startServer(repo) async {
     final rqt = req.uri.path;
     if (debug) {
       final queryParameters = req.uri.queryParameters;
-      print(
-          "[$appName v$version] ${DateTime.now()} ➡️ Requête reçue: $rqt \n Paramètres: $queryParameters");
+      print("[v$version] ${DateTime.now()} ➡️ $rqt / $queryParameters");
     }
     try {
       if (req.method == 'POST' && rqt == '/connect') {

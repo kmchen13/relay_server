@@ -60,3 +60,5 @@
     Correction showPlayersHTML
 3.2.3
     Correction admin_handler
+3.2.4
+    Modification affichage logs
