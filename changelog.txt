@@ -70,4 +70,6 @@
     Corrections affichage logs pour Render
 3.2.7
     Corrections affichage logs pour Render
+3.2.8
+    Corrections affichage logs pour Render
     

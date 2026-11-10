@@ -20,43 +20,38 @@ import 'services/messages_repository.dart';
 String? _lastLogKey;
 int _repeatCount = 0;
 String? _lastTimestamp;
-Timer? _logTimer;
-
-// Permet de forcer l'affichage immédiat dans Render
-Future<void> _flushStdout() async {
-  await stdout.flush();
-}
 
 void _logRequest(String rqt, Map<String, String> queryParameters) {
   final sortedParams = queryParameters.entries.toList()
     ..sort((a, b) => a.key.compareTo(b.key));
+
   final key =
       '$rqt?${sortedParams.map((e) => '${e.key}=${e.value}').join('&')}';
 
-  // Annule le timer précédent s'il y en a un en attente
-  _logTimer?.cancel();
-
   if (key == _lastLogKey) {
     _repeatCount++;
+
+    // Ajouter uniquement le compteur
+    stdout.write('\r'); // retour au début de la ligne
+    stdout.write(
+      '[v$version] $_lastTimestamp ➡️ $rqt / $queryParameters, x$_repeatCount',
+    );
   } else {
-    // Nouvelle requête : on logue immédiatement la précédente si elle était en attente
-    // (ici on suppose que le timer a déjà géré l'affichage)
+    // Valider la ligne précédente
+    if (_lastLogKey != null) {
+      stdout.writeln();
+    }
+
     _lastLogKey = key;
     _repeatCount = 1;
     _lastTimestamp = DateTime.now().toString();
+
+    stdout.write(
+      '[v$version] $_lastTimestamp ➡️ $rqt / $queryParameters',
+    );
   }
 
-  final line = '[v$version] $_lastTimestamp ➡️ $rqt / $queryParameters'
-      '${_repeatCount > 1 ? ' (x$_repeatCount)' : ''}';
-
-  // On programme l'affichage dans 500ms.
-  // Si une autre requête arrive avant, le timer est annulé et remplacé.
-  _logTimer = Timer(const Duration(milliseconds: 500), () async {
-    // On utilise \r pour réécrire la ligne, mais avec un \n à la fin pour valider
-    // (Render affichera la ligne à jour)
-    stdout.write('\r$line\x1B[K\n');
-    await _flushStdout();
-  });
+  stdout.flush();
 }
 
 Future<void> main() async {
