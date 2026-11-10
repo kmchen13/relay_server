@@ -17,13 +17,14 @@ import 'constants.dart';
 import 'services/messages_repository.dart';
 import 'services/utility.dart';
 
-// --- état du suivi de logs ---
+///Affichage des logs de requêtes HTTP avec un formatage spécifique.
 String? _lastLogKey;
 int _repeatCount = 0;
+String? _lastTimestamp;
 bool _isFirstLog = true;
+int _lastLineLength = 0;
 
 void _logRequest(String rqt, Map<String, String> queryParameters) {
-  // Clé d'identification de la requête (chemin + paramètres triés)
   final sortedParams = queryParameters.entries.toList()
     ..sort((a, b) => a.key.compareTo(b.key));
   final key =
@@ -34,23 +35,33 @@ void _logRequest(String rqt, Map<String, String> queryParameters) {
   } else {
     _lastLogKey = key;
     _repeatCount = 1;
+    _lastTimestamp = DateTime.now().toString();
+
+    // Si on change de requête, on termine la ligne précédente pour ne pas la mélanger
+    if (!_isFirstLog) {
+      stdout.write('\n');
+    }
   }
 
-  final line = '[v$version] ${DateTime.now()} ➡️ $rqt / $queryParameters'
+  final line = '[v$version] $_lastTimestamp ➡️ $rqt / $queryParameters'
       '${_repeatCount > 1 ? ' (x$_repeatCount)' : ''}';
 
+  // On complète avec des espaces pour effacer les caractères restants
+  // si la nouvelle ligne est plus courte que l'ancienne (ex: on passe de (x10) à (x11))
+  final paddedLine = line.padRight(_lastLineLength);
+  _lastLineLength = line.length;
+
   if (_isFirstLog) {
-    // Première ligne, on écrit normalement avec un saut de ligne
-    stdout.write('$line\n');
+    // Premier log global : on écrit avec un \n pour valider
+    stdout.write('$paddedLine\n');
     _isFirstLog = false;
   } else if (_repeatCount > 1) {
-    // Requête identique : on remonte d'une ligne, on efface, et on réécrit
-    // \x1B[A = curseur en haut d'une ligne
-    // \x1B[K = efface la ligne du curseur jusqu'à la fin
-    stdout.write('\x1B[A\x1B[K$line\n');
+    // Même requête : \r pour revenir au début de la ligne SANS saut de ligne
+    // Render mettra à jour la ligne en cours
+    stdout.write('\r$paddedLine');
   } else {
-    // Nouvelle requête : on écrit simplement sur la nouvelle ligne
-    stdout.write('$line\n');
+    // Nouvelle requête : on commence une nouvelle ligne
+    stdout.write('$paddedLine\n');
   }
 }
 
