@@ -64,3 +64,6 @@
     Modification affichage logs
 3.2.5
     Modification affichage logs
+3.2.5
+    Adapatation logs répétitifs pour Render
+    

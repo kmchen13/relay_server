@@ -20,7 +20,7 @@ import 'services/utility.dart';
 // --- état du suivi de logs ---
 String? _lastLogKey;
 int _repeatCount = 0;
-int _lastLineLength = 0;
+bool _isFirstLog = true;
 
 void _logRequest(String rqt, Map<String, String> queryParameters) {
   // Clé d'identification de la requête (chemin + paramètres triés)
@@ -30,25 +30,28 @@ void _logRequest(String rqt, Map<String, String> queryParameters) {
       '$rqt?${sortedParams.map((e) => '${e.key}=${e.value}').join('&')}';
 
   if (key == _lastLogKey) {
-    // Même requête → incrémenter
     _repeatCount++;
   } else {
-    // Requête différente → terminer la ligne précédente si elle existait
-    if (_lastLogKey != null) {
-      stdout.write('\n');
-    }
     _lastLogKey = key;
     _repeatCount = 1;
-    _lastLineLength = 0;
   }
 
   final line = '[v$version] ${DateTime.now()} ➡️ $rqt / $queryParameters'
       '${_repeatCount > 1 ? ' (x$_repeatCount)' : ''}';
 
-  // \r + effacement de la fin de ligne pour réécrire proprement
-  final padded = line.padRight(_lastLineLength);
-  stdout.write('\r$padded');
-  _lastLineLength = line.length;
+  if (_isFirstLog) {
+    // Première ligne, on écrit normalement avec un saut de ligne
+    stdout.write('$line\n');
+    _isFirstLog = false;
+  } else if (_repeatCount > 1) {
+    // Requête identique : on remonte d'une ligne, on efface, et on réécrit
+    // \x1B[A = curseur en haut d'une ligne
+    // \x1B[K = efface la ligne du curseur jusqu'à la fin
+    stdout.write('\x1B[A\x1B[K$line\n');
+  } else {
+    // Nouvelle requête : on écrit simplement sur la nouvelle ligne
+    stdout.write('$line\n');
+  }
 }
 
 Future<void> main() async {
