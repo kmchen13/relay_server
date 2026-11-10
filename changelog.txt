@@ -54,3 +54,5 @@
 3.2.0
     Ajout bascule debug ON/OFF dans /admin
     modification dockerfile pour passage à debian 12 bookworm
+3.2.1
+    Correction dockerfile syntaxe

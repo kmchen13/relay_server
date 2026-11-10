@@ -1,4 +1,3 @@
-```dockerfile
 # Image Dart officielle
 FROM dart:stable AS build
 
@@ -29,4 +28,3 @@ EXPOSE 8080
 
 # Commande de lancement
 CMD ["./server"]
-```
