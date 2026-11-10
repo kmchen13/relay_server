@@ -15,14 +15,17 @@ import 'handlers/dictionary_handler.dart';
 import 'handlers/get_free_players.dart';
 import 'constants.dart';
 import 'services/messages_repository.dart';
-import 'services/utility.dart';
 
 ///Affichage des logs de requêtes HTTP avec un formatage spécifique.
 String? _lastLogKey;
 int _repeatCount = 0;
 String? _lastTimestamp;
-bool _isFirstLog = true;
-int _lastLineLength = 0;
+Timer? _logTimer;
+
+// Permet de forcer l'affichage immédiat dans Render
+Future<void> _flushStdout() async {
+  await stdout.flush();
+}
 
 void _logRequest(String rqt, Map<String, String> queryParameters) {
   final sortedParams = queryParameters.entries.toList()
@@ -30,39 +33,30 @@ void _logRequest(String rqt, Map<String, String> queryParameters) {
   final key =
       '$rqt?${sortedParams.map((e) => '${e.key}=${e.value}').join('&')}';
 
+  // Annule le timer précédent s'il y en a un en attente
+  _logTimer?.cancel();
+
   if (key == _lastLogKey) {
     _repeatCount++;
   } else {
+    // Nouvelle requête : on logue immédiatement la précédente si elle était en attente
+    // (ici on suppose que le timer a déjà géré l'affichage)
     _lastLogKey = key;
     _repeatCount = 1;
     _lastTimestamp = DateTime.now().toString();
-
-    // Si on change de requête, on termine la ligne précédente pour ne pas la mélanger
-    if (!_isFirstLog) {
-      stdout.write('\n');
-    }
   }
 
   final line = '[v$version] $_lastTimestamp ➡️ $rqt / $queryParameters'
       '${_repeatCount > 1 ? ' (x$_repeatCount)' : ''}';
 
-  // On complète avec des espaces pour effacer les caractères restants
-  // si la nouvelle ligne est plus courte que l'ancienne (ex: on passe de (x10) à (x11))
-  final paddedLine = line.padRight(_lastLineLength);
-  _lastLineLength = line.length;
-
-  if (_isFirstLog) {
-    // Premier log global : on écrit avec un \n pour valider
-    stdout.write('$paddedLine\n');
-    _isFirstLog = false;
-  } else if (_repeatCount > 1) {
-    // Même requête : \r pour revenir au début de la ligne SANS saut de ligne
-    // Render mettra à jour la ligne en cours
-    stdout.write('\r$paddedLine');
-  } else {
-    // Nouvelle requête : on commence une nouvelle ligne
-    stdout.write('$paddedLine\n');
-  }
+  // On programme l'affichage dans 500ms.
+  // Si une autre requête arrive avant, le timer est annulé et remplacé.
+  _logTimer = Timer(const Duration(milliseconds: 500), () async {
+    // On utilise \r pour réécrire la ligne, mais avec un \n à la fin pour valider
+    // (Render affichera la ligne à jour)
+    stdout.write('\r$line\x1B[K\n');
+    await _flushStdout();
+  });
 }
 
 Future<void> main() async {
