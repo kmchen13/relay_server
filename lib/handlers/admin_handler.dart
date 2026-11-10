@@ -13,6 +13,22 @@ Future<void> handleAdmin(
   bool refresh = false;
 
   switch (req.uri.path) {
+    case '/admin/toggleDebug' when req.method == 'POST':
+      setDebug(!debug);
+
+      if (debug) {
+        print(
+          "[$appName v$version] 🐞 debug mode enabled",
+        );
+      } else {
+        print(
+          "[$appName v$version] 🐞 debug mode disabled",
+        );
+      }
+
+      refresh = true;
+      break;
+
     case '/admin/clear' when req.method == 'POST':
       await repo.clear();
 

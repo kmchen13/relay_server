@@ -58,3 +58,5 @@
     Correction dockerfile syntaxe
 3.2.2
     Correction showPlayersHTML
+3.2.3
+    Correction admin_handler
