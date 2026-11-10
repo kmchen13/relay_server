@@ -239,6 +239,24 @@ button {
  border:none;
 }
 
+.debug-on {
+ background:#2a2;
+ color:white;
+ border:none;
+}
+
+.debug-off {
+ background:#888;
+ color:white;
+ border:none;
+}
+
+.toolbar {
+ display:flex;
+ gap:10px;
+ align-items:center;
+ margin-bottom:15px;
+}
 </style>
 
 <script>
@@ -254,6 +272,35 @@ function confirmDelete(x){
 
   buffer.writeln('<h1>$appName v$version</h1>');
 
+  // ----- Barre de commandes EN HAUT -----
+  final debugLabel = debug ? 'Debug ON' : 'Debug OFF';
+  final debugClass = debug ? 'debug-on' : 'debug-off';
+
+  buffer.writeln('''
+<div class="toolbar">
+
+<form method="GET" action="/admin/players">
+<button class="refresh-button" type="submit">
+Rafraîchir
+</button>
+</form>
+
+<form method="POST" action="/admin/clear">
+<button class="delete-button" type="submit">
+Clear messages
+</button>
+</form>
+
+<form method="POST" action="/admin/toggleDebug">
+<button class="$debugClass" type="submit">
+$debugLabel
+</button>
+</form>
+
+</div>
+''');
+
+  // ----- Tableau des messages -----
   buffer.writeln('''
 <table>
 
@@ -297,27 +344,11 @@ ${msg.type}
  action="/admin/entryDelete"
  onsubmit="return confirmDelete('${msg.user}-${msg.partner ?? ''}')">
 
+<input type="hidden" name="user" value="${msg.user}">
+<input type="hidden" name="partner" value="${msg.partner ?? ''}">
+<input type="hidden" name="date" value="${msg.date}">
 
-<input type="hidden"
- name="user"
- value="${msg.user}">
-
-
-<input type="hidden"
- name="partner"
- value="${msg.partner ?? ''}">
-
-
-<input type="hidden"
- name="date"
- value="${msg.date}">
-
-
-<button 
- type="submit"
- class="delete-button">
-</button>
-
+<button type="submit" class="delete-button"></button>
 
 </form>
 
@@ -329,28 +360,6 @@ ${msg.type}
 
   buffer.writeln('''
 </table>
-
-<br>
-
-<div style="display:flex; gap:10px;">
-
-<form method="GET" action="/admin/players">
-<button class="refresh-button" type="submit">
-Rafraîchir
-</button>
-</form>
-
-
-<form method="POST" action="/admin/clear">
-
-<button class="delete-button" type="submit">
-Clear messages
-</button>
-
-</form>
-
-</div>
-
 
 </body>
 </html>

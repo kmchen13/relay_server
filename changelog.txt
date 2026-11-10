@@ -56,3 +56,5 @@
     modification dockerfile pour passage à debian 12 bookworm
 3.2.1
     Correction dockerfile syntaxe
+3.2.2
+    Correction showPlayersHTML
