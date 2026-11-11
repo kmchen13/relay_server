@@ -146,7 +146,7 @@ Future<void> showPlayers(PlayersRepository repo) async {
       'SELECT user, expectedName, partner, startTime, partnerStartTime, message FROM players');
   if (!debug) return;
 
-  print('[$appName v$version] Joueurs enregistrés:');
+  print('[v$version] Joueurs enregistrés:');
   print('| Usr |  Time    |Prtnr|Message|');
   print('+-----+----------+-----+-------');
 
@@ -192,7 +192,7 @@ Future<String> showMessagesAsHTML(
 <head>
 <meta charset="utf-8">
 
-<title>$appName v$version</title>
+<title>v$version</title>
 
 <style>
 body {
@@ -270,7 +270,7 @@ function confirmDelete(x){
 <body>
 ''');
 
-  buffer.writeln('<h1>$appName v$version</h1>');
+  buffer.writeln('<h1>v$version</h1>');
 
   // ----- Barre de commandes EN HAUT -----
   final debugLabel = debug ? 'Debug ON' : 'Debug OFF';

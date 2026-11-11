@@ -65,8 +65,7 @@ Future<void> main() async {
   Map<String, String> loadConfig() {
     if (isLocalEnvironment()) {
       // En local, charge le fichier .env.dev
-      print(
-          '[$appName v$version] ⚙️ Chargement de la configuration en mode local');
+      print('[v$version] ⚙️ Chargement de la configuration en mode local');
       final env = DotEnv()..load(['.env.dev']);
       return {
         'host': env['DB_HOST'] ?? (throw Exception('DB_HOST non défini')),
@@ -78,8 +77,7 @@ Future<void> main() async {
       };
     } else {
       // En production (Render.com), utilise Platform.environment
-      print(
-          '[$appName v$version] ⚙️ Chargement de la configuration en mode production');
+      print('[v$version] ⚙️ Chargement de la configuration en mode production');
       final env = Platform.environment;
       return {
         'host': env['DB_HOST'] ?? (throw Exception('DB_HOST non défini')),
@@ -123,16 +121,16 @@ Future<void> main() async {
   // Boucle de surveillance pour rouvrir la connexion en cas de déconnexion
   Timer.periodic(const Duration(minutes: 1), (timer) async {
     if (connection.isClosed) {
-      print('🔄 Connection to Neon lost. Reconnecting...');
+      print('[v$version]🔄 Connection to Neon lost. Reconnecting...');
       try {
         await connection.close();
       } catch (_) {}
       try {
         connection = await createConnection();
         repo.connection = connection; // Réinjecte la connexion dans le repo
-        print('[$appName v$version] ✅ Reconnected to Neon Postgres.');
+        print('[v$version] ✅ Reconnected to Neon Postgres.');
       } catch (e) {
-        print('[$appName v$version] ❌ Failed to reconnect: $e');
+        print('[v$version] ❌ Failed to reconnect: $e');
       }
     }
   });
@@ -180,7 +178,7 @@ Future<void> startServer(repo) async {
       }
     } catch (e, st) {
       if (debug) {
-        print("[$appName v$version] ❌ Exception: $e");
+        print("[v$version] ❌ Exception: $e");
         print(st);
       }
       jsonResponse(
@@ -190,8 +188,7 @@ Future<void> startServer(repo) async {
             'details': e.toString(),
           },
           statusCode: HttpStatus.internalServerError);
-      print(
-          "[$appName v$version] ❌ Exception dans le serveur: $e\n Stack: $st");
+      print("[v$version] ❌ Exception dans le serveur: $e\n Stack: $st");
     } finally {
       await req.response.close();
     }

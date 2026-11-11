@@ -72,4 +72,7 @@
     Corrections affichage logs pour Render
 3.2.9
     Corrections affichage logs pour Render
+3.2.10
+    Corrections affichage logs pour Render
+    suppression $appName des logs
     

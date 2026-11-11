@@ -38,7 +38,7 @@ Future<void> handleGameOver(
 
     if (debug) {
       print(
-        "[$appName v$version] 🏁 /gameover $user → $partner",
+        "[v$version] 🏁 /gameover $user → $partner",
       );
     }
 
@@ -56,7 +56,7 @@ Future<void> handleGameOver(
   } catch (e, st) {
     if (debug) {
       print(
-        "[$appName v$version] ❌ /gameover $e",
+        "[v$version] ❌ /gameover $e",
       );
       print(st);
     }

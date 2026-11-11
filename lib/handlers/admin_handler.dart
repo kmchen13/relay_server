@@ -18,11 +18,11 @@ Future<void> handleAdmin(
 
       if (debug) {
         print(
-          "[$appName v$version] 🐞 debug mode enabled",
+          "[v$version] 🐞 debug mode enabled",
         );
       } else {
         print(
-          "[$appName v$version] 🐞 debug mode disabled",
+          "[v$version] 🐞 debug mode disabled",
         );
       }
 
@@ -34,7 +34,7 @@ Future<void> handleAdmin(
 
       if (debug) {
         print(
-          "[$appName v$version] 🧹 messages table cleared",
+          "[v$version] 🧹 messages table cleared",
         );
       }
 
@@ -71,7 +71,7 @@ Future<void> handleAdmin(
 
       if (debug) {
         print(
-          "[$appName v$version] 🗑 message supprimé "
+          "[v$version] 🗑 message supprimé "
           "$user/$partner/$date",
         );
       }

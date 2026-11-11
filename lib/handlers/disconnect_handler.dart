@@ -21,7 +21,7 @@ Future<void> handleDisconnect(
 
   if (debug) {
     print(
-      '[$appName v$version] disconnect $user : CONNECT supprimés',
+      '[v$version] disconnect $user : CONNECT supprimés',
     );
   }
 

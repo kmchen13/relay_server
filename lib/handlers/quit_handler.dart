@@ -25,7 +25,7 @@ Future<void> handleQuit(
 
       if (debug) {
         print(
-          "[$appName v$version] 🔔 Invalid_quit_parameters $data",
+          "[v$version] 🔔 Invalid_quit_parameters $data",
         );
       }
 
@@ -34,7 +34,7 @@ Future<void> handleQuit(
 
     if (debug) {
       print(
-        "[$appName v$version] 🔔 /quit $user → $partner",
+        "[v$version] 🔔 /quit $user → $partner",
       );
     }
 
@@ -64,7 +64,7 @@ Future<void> handleQuit(
 
     if (debug) {
       print(
-        "[$appName v$version] 🛑 $user a quitté la partie",
+        "[v$version] 🛑 $user a quitté la partie",
       );
     }
   } catch (e, s) {

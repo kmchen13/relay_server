@@ -20,7 +20,7 @@ Future<void> getFreePlayersList(HttpRequest req, PlayersRepository repo) async {
     );
   } catch (e, st) {
     if (debug) {
-      print("[$appName v$version] ❌ Erreur getFreePlayersList: $e");
+      print("[v$version] ❌ Erreur getFreePlayersList: $e");
       print(st);
     }
     jsonResponse(

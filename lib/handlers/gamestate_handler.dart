@@ -33,7 +33,7 @@ Future<void> handleGameState(
     }
 
     if (debug) {
-      print("[$appName v$version] 🎲 /gamestate $user → $partner");
+      print("[v$version] 🎲 /gamestate $user → $partner");
     }
 
     await repo.insertMessage(
@@ -49,7 +49,7 @@ Future<void> handleGameState(
     );
   } catch (e, st) {
     if (debug) {
-      print("[$appName v$version] ❌ /gamestate $e");
+      print("[v$version] ❌ /gamestate $e");
       print(st);
     }
 
